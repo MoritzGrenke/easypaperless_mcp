@@ -25,16 +25,16 @@ def get_client() -> SyncPaperlessClient:
 @mcp.tool
 def list_documents(
     search: str = "",
-    max_results: int = 25,
+    max_results: int = 5,
     ordering: str = "-added",
-) -> list[dict]:
+) -> list[str]:
     """List documents from paperless-ngx, optionally filtered by a search query."""
     client = get_client()
     kwargs: dict = {"max_results": max_results, "ordering": ordering}
     if search:
         kwargs["search"] = search
     docs = client.documents.list(**kwargs)
-    return [doc.model_dump() for doc in docs]
+    return [doc.title for doc in docs] #model_dump()
 
 
 @mcp.tool
@@ -46,11 +46,11 @@ def get_document(document_id: int) -> dict:
 
 
 @mcp.tool
-def search_documents(query: str, max_results: int = 25) -> list[dict]:
+def search_documents(query: str, max_results: int = 5) -> list[str]:
     """Full-text search for documents matching the given query string."""
     client = get_client()
     docs = client.documents.list(search=query, max_results=max_results)
-    return [doc.model_dump() for doc in docs]
+    return [doc.title for doc in docs] #model_dump()
 
 
 def main() -> None:
