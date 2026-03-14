@@ -45,7 +45,7 @@ def _filter_fields(doc: Document, return_fields: list[str]) -> Document:
     Returns:
         A model_copy of the document with non-listed fields nulled out.
     """
-    all_fields = set(doc.model_fields)
+    all_fields = set(doc.__class__.model_fields)
     to_null: dict[str, Any] = {f: None for f in all_fields if f not in return_fields}
     if not to_null:
         return doc
