@@ -61,13 +61,52 @@ def _filter_fields(doc: Document, return_fields: list[str]) -> Document:
 def list_documents(
     search: str | None = None,
     search_mode: str = "title_or_content",
+    # ID filtering
+    ids: list[int] | None = None,
+    # Tag filtering
     tags: list[str] | None = None,
+    any_tags: list[int | str] | None = None,
+    exclude_tags: list[int | str] | None = None,
+    # Correspondent filtering
     correspondent: int | str | None = None,
+    any_correspondent: list[int | str] | None = None,
+    exclude_correspondents: list[int | str] | None = None,
+    # Document type filtering
     document_type: int | str | None = None,
+    document_type_name_contains: str | None = None,
+    document_type_name_exact: str | None = None,
+    any_document_type: list[int | str] | None = None,
+    exclude_document_types: list[int | str] | None = None,
+    # Storage path filtering
     storage_path: int | str | None = None,
+    any_storage_paths: list[int | str] | None = None,
+    exclude_storage_paths: list[int | str] | None = None,
+    # Owner filtering
+    owner: int | None = None,
+    exclude_owners: list[int] | None = None,
+    # Custom field filtering
+    custom_fields: list[int | str] | None = None,
+    any_custom_fields: list[int | str] | None = None,
+    exclude_custom_fields: list[int | str] | None = None,
+    custom_field_query: list[Any] | None = None,
+    # Date filtering
     created_after: str | None = None,
     created_before: str | None = None,
+    added_after: str | None = None,
+    added_before: str | None = None,
+    modified_after: str | None = None,
+    modified_before: str | None = None,
+    # Archive serial number filtering
+    archive_serial_number: int | None = None,
+    archive_serial_number_from: int | None = None,
+    archive_serial_number_till: int | None = None,
+    # File checksum
+    checksum: str | None = None,
+    # Ordering & pagination
     ordering: str | None = None,
+    page: int | None = None,
+    page_size: int = 25,
+    descending: bool = False,
     max_results: int = 25,
     return_fields: list[str] = _LIST_RETURN_FIELDS,
 ) -> list[Document]:
@@ -80,13 +119,43 @@ def list_documents(
         search: Search string applied according to search_mode.
         search_mode: How search is applied. One of: "title_or_content" (default),
             "title", "query", "original_filename".
+        ids: Restrict results to this specific set of document IDs.
         tags: Filter to documents that have ALL of these tags (IDs or names).
+        any_tags: Filter to documents that have ANY of these tags (IDs or names).
+        exclude_tags: Exclude documents that have ANY of these tags (IDs or names).
         correspondent: Filter to documents with this correspondent (ID or name).
+        any_correspondent: Filter to documents with any of these correspondents (IDs or names).
+        exclude_correspondents: Exclude documents matching these correspondents (IDs or names).
         document_type: Filter to documents of this type (ID or name).
+        document_type_name_contains: Filter by document type name containing this string.
+        document_type_name_exact: Filter by exact document type name match.
+        any_document_type: Filter to documents of any of these types (IDs or names).
+        exclude_document_types: Exclude documents of these types (IDs or names).
         storage_path: Filter to documents in this storage path (ID or name).
+        any_storage_paths: Filter to documents in any of these storage paths (IDs or names).
+        exclude_storage_paths: Exclude documents in these storage paths (IDs or names).
+        owner: Filter to documents owned by this user ID.
+        exclude_owners: Exclude documents owned by these user IDs.
+        custom_fields: Filter to documents with ALL of these custom fields set (IDs or names).
+        any_custom_fields: Filter to documents with ANY of these custom fields set (IDs or names).
+        exclude_custom_fields: Exclude documents with ANY of these custom fields set (IDs or names).
+        custom_field_query: Advanced custom field query expression. A nested list structure
+            following the easypaperless query DSL, e.g.
+            ["AND", [["field_id", "exact", "value"], ["field_id2", "exists", True]]].
         created_after: ISO date string — only documents created after this date.
         created_before: ISO date string — only documents created before this date.
+        added_after: ISO datetime string — only documents added after this datetime.
+        added_before: ISO datetime string — only documents added before this datetime.
+        modified_after: ISO datetime string — only documents modified after this datetime.
+        modified_before: ISO datetime string — only documents modified before this datetime.
+        archive_serial_number: Exact ASN match.
+        archive_serial_number_from: ASN range start (inclusive).
+        archive_serial_number_till: ASN range end (inclusive).
+        checksum: Find document by exact file checksum.
         ordering: Field name to sort by (e.g. "created", "-added").
+        page: Page number for manual pagination.
+        page_size: Number of results per page. Default: 25.
+        descending: Reverse the ordering direction. Default: False.
         max_results: Maximum number of documents to return. Default: 25.
         return_fields: Document fields to include in the response. All others
             are set to None. Defaults to a compact summary set.
@@ -95,24 +164,76 @@ def list_documents(
         List of Document objects with only return_fields populated.
     """
     client = get_client()
-    kwargs: dict[str, Any] = {"max_results": max_results}
+    kwargs: dict[str, Any] = {"max_results": max_results, "page_size": page_size, "descending": descending}
     if search is not None:
         kwargs["search"] = search
         kwargs["search_mode"] = search_mode
+    if ids is not None:
+        kwargs["ids"] = ids
     if tags is not None:
         kwargs["tags"] = tags
+    if any_tags is not None:
+        kwargs["any_tags"] = any_tags
+    if exclude_tags is not None:
+        kwargs["exclude_tags"] = exclude_tags
     if correspondent is not None:
         kwargs["correspondent"] = correspondent
+    if any_correspondent is not None:
+        kwargs["any_correspondent"] = any_correspondent
+    if exclude_correspondents is not None:
+        kwargs["exclude_correspondents"] = exclude_correspondents
     if document_type is not None:
         kwargs["document_type"] = document_type
+    if document_type_name_contains is not None:
+        kwargs["document_type_name_contains"] = document_type_name_contains
+    if document_type_name_exact is not None:
+        kwargs["document_type_name_exact"] = document_type_name_exact
+    if any_document_type is not None:
+        kwargs["any_document_type"] = any_document_type
+    if exclude_document_types is not None:
+        kwargs["exclude_document_types"] = exclude_document_types
     if storage_path is not None:
         kwargs["storage_path"] = storage_path
+    if any_storage_paths is not None:
+        kwargs["any_storage_paths"] = any_storage_paths
+    if exclude_storage_paths is not None:
+        kwargs["exclude_storage_paths"] = exclude_storage_paths
+    if owner is not None:
+        kwargs["owner"] = owner
+    if exclude_owners is not None:
+        kwargs["exclude_owners"] = exclude_owners
+    if custom_fields is not None:
+        kwargs["custom_fields"] = custom_fields
+    if any_custom_fields is not None:
+        kwargs["any_custom_fields"] = any_custom_fields
+    if exclude_custom_fields is not None:
+        kwargs["exclude_custom_fields"] = exclude_custom_fields
+    if custom_field_query is not None:
+        kwargs["custom_field_query"] = custom_field_query
     if created_after is not None:
         kwargs["created_after"] = created_after
     if created_before is not None:
         kwargs["created_before"] = created_before
+    if added_after is not None:
+        kwargs["added_after"] = added_after
+    if added_before is not None:
+        kwargs["added_before"] = added_before
+    if modified_after is not None:
+        kwargs["modified_after"] = modified_after
+    if modified_before is not None:
+        kwargs["modified_before"] = modified_before
+    if archive_serial_number is not None:
+        kwargs["archive_serial_number"] = archive_serial_number
+    if archive_serial_number_from is not None:
+        kwargs["archive_serial_number_from"] = archive_serial_number_from
+    if archive_serial_number_till is not None:
+        kwargs["archive_serial_number_till"] = archive_serial_number_till
+    if checksum is not None:
+        kwargs["checksum"] = checksum
     if ordering is not None:
         kwargs["ordering"] = ordering
+    if page is not None:
+        kwargs["page"] = page
     docs = client.documents.list(**kwargs)
     return [_filter_fields(doc, return_fields) for doc in docs]
 

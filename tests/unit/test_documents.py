@@ -72,6 +72,120 @@ def test_list_documents_omits_none_filters(patch_get_client: MagicMock) -> None:
     assert "tags" not in call_kwargs
 
 
+def test_list_documents_passes_ids(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.list.return_value = []
+    list_documents(ids=[1, 2, 3])
+    assert patch_get_client.documents.list.call_args.kwargs["ids"] == [1, 2, 3]
+
+
+def test_list_documents_passes_any_and_exclude_tags(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.list.return_value = []
+    list_documents(any_tags=[1, "urgent"], exclude_tags=[5])
+    call_kwargs = patch_get_client.documents.list.call_args.kwargs
+    assert call_kwargs["any_tags"] == [1, "urgent"]
+    assert call_kwargs["exclude_tags"] == [5]
+
+
+def test_list_documents_passes_correspondent_filters(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.list.return_value = []
+    list_documents(any_correspondent=[1, 2], exclude_correspondents=[3])
+    call_kwargs = patch_get_client.documents.list.call_args.kwargs
+    assert call_kwargs["any_correspondent"] == [1, 2]
+    assert call_kwargs["exclude_correspondents"] == [3]
+
+
+def test_list_documents_passes_document_type_filters(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.list.return_value = []
+    list_documents(
+        document_type_name_contains="invoice",
+        document_type_name_exact="Invoice",
+        any_document_type=[1, 2],
+        exclude_document_types=[3],
+    )
+    call_kwargs = patch_get_client.documents.list.call_args.kwargs
+    assert call_kwargs["document_type_name_contains"] == "invoice"
+    assert call_kwargs["document_type_name_exact"] == "Invoice"
+    assert call_kwargs["any_document_type"] == [1, 2]
+    assert call_kwargs["exclude_document_types"] == [3]
+
+
+def test_list_documents_passes_storage_path_filters(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.list.return_value = []
+    list_documents(any_storage_paths=[1], exclude_storage_paths=[2])
+    call_kwargs = patch_get_client.documents.list.call_args.kwargs
+    assert call_kwargs["any_storage_paths"] == [1]
+    assert call_kwargs["exclude_storage_paths"] == [2]
+
+
+def test_list_documents_passes_owner_filters(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.list.return_value = []
+    list_documents(owner=7, exclude_owners=[8, 9])
+    call_kwargs = patch_get_client.documents.list.call_args.kwargs
+    assert call_kwargs["owner"] == 7
+    assert call_kwargs["exclude_owners"] == [8, 9]
+
+
+def test_list_documents_passes_custom_field_filters(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.list.return_value = []
+    query = ["AND", [["1", "exact", "foo"]]]
+    list_documents(
+        custom_fields=[1],
+        any_custom_fields=[2],
+        exclude_custom_fields=[3],
+        custom_field_query=query,
+    )
+    call_kwargs = patch_get_client.documents.list.call_args.kwargs
+    assert call_kwargs["custom_fields"] == [1]
+    assert call_kwargs["any_custom_fields"] == [2]
+    assert call_kwargs["exclude_custom_fields"] == [3]
+    assert call_kwargs["custom_field_query"] == query
+
+
+def test_list_documents_passes_asn_filters(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.list.return_value = []
+    list_documents(archive_serial_number=42, archive_serial_number_from=10, archive_serial_number_till=50)
+    call_kwargs = patch_get_client.documents.list.call_args.kwargs
+    assert call_kwargs["archive_serial_number"] == 42
+    assert call_kwargs["archive_serial_number_from"] == 10
+    assert call_kwargs["archive_serial_number_till"] == 50
+
+
+def test_list_documents_passes_date_filters(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.list.return_value = []
+    list_documents(
+        added_after="2024-01-01T00:00:00Z",
+        added_before="2024-12-31T23:59:59Z",
+        modified_after="2024-06-01T00:00:00Z",
+        modified_before="2024-06-30T23:59:59Z",
+    )
+    call_kwargs = patch_get_client.documents.list.call_args.kwargs
+    assert call_kwargs["added_after"] == "2024-01-01T00:00:00Z"
+    assert call_kwargs["added_before"] == "2024-12-31T23:59:59Z"
+    assert call_kwargs["modified_after"] == "2024-06-01T00:00:00Z"
+    assert call_kwargs["modified_before"] == "2024-06-30T23:59:59Z"
+
+
+def test_list_documents_passes_checksum(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.list.return_value = []
+    list_documents(checksum="abc123def456")
+    assert patch_get_client.documents.list.call_args.kwargs["checksum"] == "abc123def456"
+
+
+def test_list_documents_passes_pagination_params(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.list.return_value = []
+    list_documents(page=2, page_size=50, descending=True)
+    call_kwargs = patch_get_client.documents.list.call_args.kwargs
+    assert call_kwargs["page"] == 2
+    assert call_kwargs["page_size"] == 50
+    assert call_kwargs["descending"] is True
+
+
+def test_list_documents_page_omitted_when_none(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.list.return_value = []
+    list_documents()
+    assert "page" not in patch_get_client.documents.list.call_args.kwargs
+
+
 # ---------------------------------------------------------------------------
 # get_document
 # ---------------------------------------------------------------------------
