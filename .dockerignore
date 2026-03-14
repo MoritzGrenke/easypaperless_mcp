@@ -1,0 +1,15 @@
+.venv/
+.git/
+.claude/
+.env
+.env.*
+__pycache__/
+*.pyc
+*.pyo
+dev/
+docs/
+README.md
+CLAUDE.md
+docker-compose.yml
+.gitignore
+.dockerignore

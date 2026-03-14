@@ -1,0 +1,19 @@
+[project]
+name = "easypaperless-mcp"
+version = "0.1.0"
+description = "MCP server for paperless-ngx via easypaperless"
+requires-python = ">=3.11"
+dependencies = [
+    "fastmcp>=2.0",
+    "easypaperless>=0.2.0",
+]
+
+[project.scripts]
+easypaperless-mcp = "easypaperless_mcp.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/easypaperless_mcp"]
