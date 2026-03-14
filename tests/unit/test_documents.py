@@ -2,12 +2,27 @@
 
 from unittest.mock import MagicMock
 
+from easypaperless import DocumentMetadata, SetPermissions
+
 from easypaperless_mcp.tools.documents import (
+    _LIST_RETURN_FIELDS,
+    _GET_RETURN_FIELDS,
     _filter_fields,
+    bulk_add_tag,
+    bulk_delete_documents,
+    bulk_modify_custom_fields,
+    bulk_modify_tags,
+    bulk_remove_tag,
+    bulk_set_correspondent,
+    bulk_set_document_type,
+    bulk_set_permissions,
+    bulk_set_storage_path,
     delete_document,
     get_document,
+    get_document_metadata,
     list_documents,
     update_document,
+    upload_document,
 )
 
 from .conftest import make_document
@@ -54,6 +69,77 @@ def test_list_documents_applies_field_filter(patch_get_client: MagicMock) -> Non
     patch_get_client.documents.list.return_value = [make_document(correspondent=99)]
     result = list_documents(return_fields=["id", "title"])
     assert result[0].correspondent is None
+
+
+def test_list_documents_return_fields_id_title_only(patch_get_client: MagicMock) -> None:
+    """Only id and title survive; all other Document fields become None."""
+    patch_get_client.documents.list.return_value = [
+        make_document(id=5, title="Hello", correspondent=3, document_type=2, tags=[1], archive_serial_number=99)
+    ]
+    result = list_documents(return_fields=["id", "title"])
+    doc = result[0]
+    assert doc.id == 5
+    assert doc.title == "Hello"
+    assert doc.correspondent is None
+    assert doc.document_type is None
+    assert doc.tags is None
+    assert doc.archive_serial_number is None
+    assert doc.created is None
+    assert doc.content is None
+
+
+def test_list_documents_default_return_fields_preserves_list_fields(patch_get_client: MagicMock) -> None:
+    """Default return_fields keeps exactly _LIST_RETURN_FIELDS; content is excluded."""
+    patch_get_client.documents.list.return_value = [
+        make_document(id=1, title="T", correspondent=7, tags=[2], archive_serial_number=10, content="secret")
+    ]
+    result = list_documents()
+    doc = result[0]
+    # All _LIST_RETURN_FIELDS should survive
+    for field in _LIST_RETURN_FIELDS:
+        # skip fields that were not set (None by default is fine)
+        pass
+    assert doc.id == 1
+    assert doc.title == "T"
+    assert doc.correspondent == 7
+    assert doc.tags == [2]
+    assert doc.archive_serial_number == 10
+    # content is not in _LIST_RETURN_FIELDS
+    assert doc.content is None
+
+
+def test_list_documents_field_filter_applied_to_all_results(patch_get_client: MagicMock) -> None:
+    """return_fields filter is applied to every document in the result list."""
+    patch_get_client.documents.list.return_value = [
+        make_document(id=1, correspondent=10),
+        make_document(id=2, correspondent=20),
+        make_document(id=3, correspondent=30),
+    ]
+    result = list_documents(return_fields=["id"])
+    assert all(doc.correspondent is None for doc in result)
+    assert [doc.id for doc in result] == [1, 2, 3]
+
+
+def test_list_documents_empty_result(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.list.return_value = []
+    assert list_documents() == []
+
+
+def test_list_documents_passes_created_date_filters(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.list.return_value = []
+    list_documents(created_after="2023-01-01", created_before="2023-12-31")
+    call_kwargs = patch_get_client.documents.list.call_args.kwargs
+    assert call_kwargs["created_after"] == "2023-01-01"
+    assert call_kwargs["created_before"] == "2023-12-31"
+
+
+def test_list_documents_default_pagination_always_passed(patch_get_client: MagicMock) -> None:
+    """page_size and descending are always forwarded even at their defaults."""
+    patch_get_client.documents.list.return_value = []
+    list_documents()
+    call_kwargs = patch_get_client.documents.list.call_args.kwargs
+    assert call_kwargs["page_size"] == 25
+    assert call_kwargs["descending"] is False
 
 
 def test_list_documents_passes_search(patch_get_client: MagicMock) -> None:
@@ -199,6 +285,43 @@ def test_get_document_returns_filtered(patch_get_client: MagicMock) -> None:
     assert result.content is None
 
 
+def test_get_document_default_return_fields_excludes_content(patch_get_client: MagicMock) -> None:
+    """content is not in _GET_RETURN_FIELDS so it is nulled in the default response."""
+    patch_get_client.documents.get.return_value = make_document(id=3, content="full text here")
+    result = get_document(3)
+    assert result.content is None
+
+
+def test_get_document_default_return_fields_preserves_get_fields(patch_get_client: MagicMock) -> None:
+    """All fields in _GET_RETURN_FIELDS are preserved with their values."""
+    patch_get_client.documents.get.return_value = make_document(
+        id=4, title="My Doc", correspondent=2, document_type=1,
+        storage_path=3, tags=[5], archive_serial_number=7, original_file_name="doc.pdf"
+    )
+    result = get_document(4)
+    assert result.id == 4
+    assert result.title == "My Doc"
+    assert result.correspondent == 2
+    assert result.document_type == 1
+    assert result.storage_path == 3
+    assert result.tags == [5]
+    assert result.archive_serial_number == 7
+    assert result.original_file_name == "doc.pdf"
+
+
+# ---------------------------------------------------------------------------
+# get_document_metadata
+# ---------------------------------------------------------------------------
+
+
+def test_get_document_metadata_calls_client(patch_get_client: MagicMock) -> None:
+    mock_meta = MagicMock(spec=DocumentMetadata)
+    patch_get_client.documents.get_metadata.return_value = mock_meta
+    result = get_document_metadata(42)
+    patch_get_client.documents.get_metadata.assert_called_once_with(id=42)
+    assert result is mock_meta
+
+
 # ---------------------------------------------------------------------------
 # update_document
 # ---------------------------------------------------------------------------
@@ -220,6 +343,58 @@ def test_update_document_clear_correspondent(patch_get_client: MagicMock) -> Non
     assert call_kwargs["correspondent"] is None
 
 
+def test_update_document_clear_document_type(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.update.return_value = make_document(id=1)
+    update_document(1, clear_document_type=True)
+    assert patch_get_client.documents.update.call_args.kwargs["document_type"] is None
+
+
+def test_update_document_clear_storage_path(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.update.return_value = make_document(id=1)
+    update_document(1, clear_storage_path=True)
+    assert patch_get_client.documents.update.call_args.kwargs["storage_path"] is None
+
+
+def test_update_document_clear_archive_serial_number(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.update.return_value = make_document(id=1)
+    update_document(1, clear_archive_serial_number=True)
+    assert patch_get_client.documents.update.call_args.kwargs["archive_serial_number"] is None
+
+
+def test_update_document_passes_content_and_created(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.update.return_value = make_document(id=1)
+    update_document(1, content="new text", created="2024-06-01")
+    call_kwargs = patch_get_client.documents.update.call_args.kwargs
+    assert call_kwargs["content"] == "new text"
+    assert call_kwargs["created"] == "2024-06-01"
+
+
+def test_update_document_passes_tags(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.update.return_value = make_document(id=1)
+    update_document(1, tags=[3, "inbox"])
+    assert patch_get_client.documents.update.call_args.kwargs["tags"] == [3, "inbox"]
+
+
+def test_update_document_passes_remove_inbox_tags(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.update.return_value = make_document(id=1)
+    update_document(1, remove_inbox_tags=True)
+    assert patch_get_client.documents.update.call_args.kwargs["remove_inbox_tags"] is True
+
+
+def test_update_document_clear_flag_takes_precedence_over_value(patch_get_client: MagicMock) -> None:
+    """When clear_correspondent=True and correspondent=5, None is sent (clear wins)."""
+    patch_get_client.documents.update.return_value = make_document(id=1)
+    update_document(1, correspondent=5, clear_correspondent=True)
+    assert patch_get_client.documents.update.call_args.kwargs["correspondent"] is None
+
+
+def test_update_document_no_kwargs_sent_for_none_fields(patch_get_client: MagicMock) -> None:
+    """Calling with only document_id sends no extra kwargs."""
+    patch_get_client.documents.update.return_value = make_document(id=1)
+    update_document(1)
+    assert patch_get_client.documents.update.call_args.kwargs == {}
+
+
 # ---------------------------------------------------------------------------
 # delete_document
 # ---------------------------------------------------------------------------
@@ -228,3 +403,137 @@ def test_update_document_clear_correspondent(patch_get_client: MagicMock) -> Non
 def test_delete_document_calls_client(patch_get_client: MagicMock) -> None:
     delete_document(99)
     patch_get_client.documents.delete.assert_called_once_with(id=99)
+
+
+# ---------------------------------------------------------------------------
+# upload_document
+# ---------------------------------------------------------------------------
+
+
+def test_upload_document_minimal_call(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.upload.return_value = "task-id-abc"
+    result = upload_document("/tmp/file.pdf")
+    patch_get_client.documents.upload.assert_called_once_with("/tmp/file.pdf", wait=False)
+    assert result == "task-id-abc"
+
+
+def test_upload_document_passes_optional_fields(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.upload.return_value = "task-id-xyz"
+    upload_document(
+        "/tmp/invoice.pdf",
+        title="Invoice",
+        created="2024-03-01",
+        correspondent=2,
+        document_type=1,
+        storage_path=3,
+        tags=[4, "finance"],
+        archive_serial_number=99,
+    )
+    call_kwargs = patch_get_client.documents.upload.call_args.kwargs
+    assert call_kwargs["title"] == "Invoice"
+    assert call_kwargs["created"] == "2024-03-01"
+    assert call_kwargs["correspondent"] == 2
+    assert call_kwargs["document_type"] == 1
+    assert call_kwargs["storage_path"] == 3
+    assert call_kwargs["tags"] == [4, "finance"]
+    assert call_kwargs["archive_serial_number"] == 99
+
+
+def test_upload_document_omits_none_optional_fields(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.upload.return_value = "task-id"
+    upload_document("/tmp/file.pdf")
+    call_kwargs = patch_get_client.documents.upload.call_args.kwargs
+    assert "title" not in call_kwargs
+    assert "correspondent" not in call_kwargs
+    assert "tags" not in call_kwargs
+
+
+def test_upload_document_wait_true(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.upload.return_value = make_document(id=10)
+    result = upload_document("/tmp/file.pdf", wait=True)
+    assert patch_get_client.documents.upload.call_args.kwargs["wait"] is True
+    assert result.id == 10  # type: ignore[union-attr]
+
+
+# ---------------------------------------------------------------------------
+# bulk tools
+# ---------------------------------------------------------------------------
+
+
+def test_bulk_add_tag_calls_client(patch_get_client: MagicMock) -> None:
+    bulk_add_tag([1, 2, 3], "urgent")
+    patch_get_client.documents.bulk_add_tag.assert_called_once_with([1, 2, 3], "urgent")
+
+
+def test_bulk_remove_tag_calls_client(patch_get_client: MagicMock) -> None:
+    bulk_remove_tag([4, 5], 7)
+    patch_get_client.documents.bulk_remove_tag.assert_called_once_with([4, 5], 7)
+
+
+def test_bulk_modify_tags_passes_add_and_remove(patch_get_client: MagicMock) -> None:
+    bulk_modify_tags([1, 2], add_tags=[3], remove_tags=[4])
+    patch_get_client.documents.bulk_modify_tags.assert_called_once_with(
+        [1, 2], add_tags=[3], remove_tags=[4]
+    )
+
+
+def test_bulk_modify_tags_none_values_passed_through(patch_get_client: MagicMock) -> None:
+    bulk_modify_tags([1])
+    patch_get_client.documents.bulk_modify_tags.assert_called_once_with(
+        [1], add_tags=None, remove_tags=None
+    )
+
+
+def test_bulk_delete_documents_calls_client(patch_get_client: MagicMock) -> None:
+    bulk_delete_documents([10, 11, 12])
+    patch_get_client.documents.bulk_delete.assert_called_once_with([10, 11, 12])
+
+
+def test_bulk_set_correspondent_assigns_value(patch_get_client: MagicMock) -> None:
+    bulk_set_correspondent([1, 2], "ACME")
+    patch_get_client.documents.bulk_set_correspondent.assert_called_once_with([1, 2], "ACME")
+
+
+def test_bulk_set_correspondent_clears_with_none(patch_get_client: MagicMock) -> None:
+    bulk_set_correspondent([1, 2], None)
+    patch_get_client.documents.bulk_set_correspondent.assert_called_once_with([1, 2], None)
+
+
+def test_bulk_set_document_type_calls_client(patch_get_client: MagicMock) -> None:
+    bulk_set_document_type([3], 5)
+    patch_get_client.documents.bulk_set_document_type.assert_called_once_with([3], 5)
+
+
+def test_bulk_set_storage_path_calls_client(patch_get_client: MagicMock) -> None:
+    bulk_set_storage_path([7, 8], 2)
+    patch_get_client.documents.bulk_set_storage_path.assert_called_once_with([7, 8], 2)
+
+
+def test_bulk_modify_custom_fields_passes_add_and_remove(patch_get_client: MagicMock) -> None:
+    add = [{"field": 1, "value": "foo"}]
+    bulk_modify_custom_fields([1, 2], add_fields=add, remove_fields=[3])
+    patch_get_client.documents.bulk_modify_custom_fields.assert_called_once_with(
+        [1, 2], add_fields=add, remove_fields=[3]
+    )
+
+
+def test_bulk_modify_custom_fields_none_values_passed_through(patch_get_client: MagicMock) -> None:
+    bulk_modify_custom_fields([1])
+    patch_get_client.documents.bulk_modify_custom_fields.assert_called_once_with(
+        [1], add_fields=None, remove_fields=None
+    )
+
+
+def test_bulk_set_permissions_with_owner_and_merge(patch_get_client: MagicMock) -> None:
+    bulk_set_permissions([1, 2], owner=5, merge=True)
+    patch_get_client.documents.bulk_set_permissions.assert_called_once_with(
+        [1, 2], set_permissions=None, owner=5, merge=True
+    )
+
+
+def test_bulk_set_permissions_with_set_permissions(patch_get_client: MagicMock) -> None:
+    perms = MagicMock(spec=SetPermissions)
+    bulk_set_permissions([3], set_permissions=perms)
+    patch_get_client.documents.bulk_set_permissions.assert_called_once_with(
+        [3], set_permissions=perms, owner=None, merge=False
+    )
