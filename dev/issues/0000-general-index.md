@@ -1,6 +1,6 @@
 # Feature Index
 
-**Next Available ID:** 0011
+**Next Available ID:** 0013
 
 | ID | Type | Name | Status | File |
 |----|------|------|--------|------|
@@ -14,3 +14,5 @@
 | 0008 | feature | Correspondents sub-server with full resource tool coverage | QA PASSED | [0008-feature-correspondents_subserver_and_tools.md](0008-feature-correspondents_subserver_and_tools.md) |
 | 0009 | feature | Custom fields sub-server with full resource tool coverage | QA PASSED | [0009-feature-custom_fields_subserver_and_tools.md](0009-feature-custom_fields_subserver_and_tools.md) |
 | 0010 | feature | Document types sub-server with full resource tool coverage | QA PASSED | [0010-feature-document_types_subserver_and_tools.md](0010-feature-document_types_subserver_and_tools.md) |
+| 0011 | feature | Document notes sub-server with full resource tool coverage | QA PASSED | [0011-feature-document_notes_subserver_and_tools.md](0011-feature-document_notes_subserver_and_tools.md) |
+| 0012 | feature | Storage paths sub-server with full resource tool coverage | QA PASSED | [0012-feature-storage_paths_subserver_and_tools.md](0012-feature-storage_paths_subserver_and_tools.md) |
