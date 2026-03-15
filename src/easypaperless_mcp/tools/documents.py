@@ -124,7 +124,7 @@ def list_documents(
     page_size: int = 25,
     descending: bool = False,
     max_results: int = 25,
-    return_fields: list[str] = _LIST_RETURN_FIELDS,
+    return_fields: list[str] | None = None,
 ) -> list[Document]:
     """List documents from paperless-ngx with optional filtering.
 
@@ -179,6 +179,8 @@ def list_documents(
     Returns:
         List of Document objects with only return_fields populated.
     """
+    if return_fields is None:
+        return_fields = _LIST_RETURN_FIELDS
     client = get_client()
     kwargs: dict[str, Any] = {"max_results": max_results, "page_size": page_size, "descending": descending}
     if search is not None:
@@ -257,7 +259,7 @@ def list_documents(
 @documents.tool
 def get_document(
     document_id: int,
-    return_fields: list[str] = _GET_RETURN_FIELDS,
+    return_fields: list[str] | None = None,
 ) -> Document:
     """Retrieve a single document by its ID with configurable field selection.
 
@@ -269,6 +271,8 @@ def get_document(
     Returns:
         The Document with only return_fields populated.
     """
+    if return_fields is None:
+        return_fields = _GET_RETURN_FIELDS
     client = get_client()
     doc = client.documents.get(id=document_id)
     return _filter_fields(doc, return_fields)
