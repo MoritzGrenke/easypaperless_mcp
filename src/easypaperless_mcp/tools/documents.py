@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from easypaperless import Document, DocumentMetadata, SetPermissions
+from easypaperless import Document, DocumentMetadata, DocumentNote, SetPermissions
 from fastmcp import FastMCP
 from pydantic.fields import PydanticUndefined
 
@@ -109,9 +109,13 @@ def list_documents(
     created_after: str | None = None,
     created_before: str | None = None,
     added_after: str | None = None,
+    added_from: str | None = None,
     added_before: str | None = None,
+    added_until: str | None = None,
     modified_after: str | None = None,
+    modified_from: str | None = None,
     modified_before: str | None = None,
+    modified_until: str | None = None,
     # Archive serial number filtering
     archive_serial_number: int | None = None,
     archive_serial_number_from: int | None = None,
@@ -160,10 +164,14 @@ def list_documents(
             ["AND", [["field_id", "exact", "value"], ["field_id2", "exists", True]]].
         created_after: ISO date string — only documents created after this date.
         created_before: ISO date string — only documents created before this date.
-        added_after: ISO datetime string — only documents added after this datetime.
-        added_before: ISO datetime string — only documents added before this datetime.
-        modified_after: ISO datetime string — only documents modified after this datetime.
-        modified_before: ISO datetime string — only documents modified before this datetime.
+        added_after: ISO datetime string — only documents added after this datetime (exclusive).
+        added_from: ISO datetime string — only documents added on or after this datetime (inclusive).
+        added_before: ISO datetime string — only documents added before this datetime (exclusive).
+        added_until: ISO datetime string — only documents added on or before this datetime (inclusive).
+        modified_after: ISO datetime string — only documents modified after this datetime (exclusive).
+        modified_from: ISO datetime string — only documents modified on or after this datetime (inclusive).
+        modified_before: ISO datetime string — only documents modified before this datetime (exclusive).
+        modified_until: ISO datetime string — only documents modified on or before this datetime (inclusive).
         archive_serial_number: Exact ASN match.
         archive_serial_number_from: ASN range start (inclusive).
         archive_serial_number_till: ASN range end (inclusive).
@@ -234,12 +242,20 @@ def list_documents(
         kwargs["created_before"] = created_before
     if added_after is not None:
         kwargs["added_after"] = added_after
+    if added_from is not None:
+        kwargs["added_from"] = added_from
     if added_before is not None:
         kwargs["added_before"] = added_before
+    if added_until is not None:
+        kwargs["added_until"] = added_until
     if modified_after is not None:
         kwargs["modified_after"] = modified_after
+    if modified_from is not None:
+        kwargs["modified_from"] = modified_from
     if modified_before is not None:
         kwargs["modified_before"] = modified_before
+    if modified_until is not None:
+        kwargs["modified_until"] = modified_until
     if archive_serial_number is not None:
         kwargs["archive_serial_number"] = archive_serial_number
     if archive_serial_number_from is not None:
@@ -259,12 +275,15 @@ def list_documents(
 @documents.tool
 def get_document(
     document_id: int,
+    include_metadata: bool = False,
     return_fields: list[str] | None = None,
 ) -> Document:
     """Retrieve a single document by its ID with configurable field selection.
 
     Args:
         document_id: Numeric paperless-ngx document ID.
+        include_metadata: When True, fetches extended file-level metadata
+            concurrently and attaches it to the document. Default: False.
         return_fields: Document fields to include in the response. All others
             are set to None. Defaults to a rich detail set.
 
@@ -274,7 +293,7 @@ def get_document(
     if return_fields is None:
         return_fields = _GET_RETURN_FIELDS
     client = get_client()
-    doc = client.documents.get(id=document_id)
+    doc = client.documents.get(id=document_id, include_metadata=include_metadata)
     return _filter_fields(doc, return_fields)
 
 
@@ -311,6 +330,10 @@ def update_document(
     tags: list[int | str] | None = None,
     archive_serial_number: int | None = None,
     clear_archive_serial_number: bool = False,
+    custom_fields: list[dict[str, Any]] | None = None,
+    owner: int | None = None,
+    clear_owner: bool = False,
+    set_permissions: SetPermissions | None = None,
     remove_inbox_tags: bool | None = None,
 ) -> Document:
     """Partially update a document (PATCH semantics).
@@ -333,6 +356,11 @@ def update_document(
         tags: Full replacement list of tags (IDs or names).
         archive_serial_number: Archive serial number to assign.
         clear_archive_serial_number: Set True to remove the ASN.
+        custom_fields: List of custom field value dicts, each in the form
+            {"field": <field_id>, "value": <value>}.
+        owner: Numeric user ID to assign as document owner.
+        clear_owner: Set True to remove the owner.
+        set_permissions: Explicit view/change permission sets.
         remove_inbox_tags: When True, removes all inbox tags from the document.
 
     Returns:
@@ -371,6 +399,17 @@ def update_document(
     elif archive_serial_number is not None:
         kwargs["archive_serial_number"] = archive_serial_number
 
+    if custom_fields is not None:
+        kwargs["custom_fields"] = custom_fields
+
+    if clear_owner:
+        kwargs["owner"] = None
+    elif owner is not None:
+        kwargs["owner"] = owner
+
+    if set_permissions is not None:
+        kwargs["set_permissions"] = set_permissions
+
     if remove_inbox_tags is not None:
         kwargs["remove_inbox_tags"] = remove_inbox_tags
 
@@ -400,6 +439,7 @@ def upload_document(
     storage_path: int | str | None = None,
     tags: list[int | str] | None = None,
     archive_serial_number: int | None = None,
+    custom_fields: list[dict[str, Any]] | None = None,
     wait: bool = False,
 ) -> str | Document:
     """Upload a document file to paperless-ngx.
@@ -413,6 +453,8 @@ def upload_document(
         storage_path: Storage path to assign (ID or name).
         tags: Tags to assign (IDs or names).
         archive_serial_number: Archive serial number to assign.
+        custom_fields: List of custom field value dicts, each in the form
+            {"field": <field_id>, "value": <value>}.
         wait: If False (default), returns the Celery task ID immediately.
             If True, polls until processing completes and returns the Document.
 
@@ -436,6 +478,8 @@ def upload_document(
         kwargs["tags"] = tags
     if archive_serial_number is not None:
         kwargs["archive_serial_number"] = archive_serial_number
+    if custom_fields is not None:
+        kwargs["custom_fields"] = custom_fields
     return client.documents.upload(file_path, **kwargs)
 
 
@@ -584,3 +628,49 @@ def bulk_set_permissions(
     client.documents.bulk_set_permissions(
         document_ids, set_permissions=set_permissions, owner=owner, merge=merge
     )
+
+
+# ---------------------------------------------------------------------------
+# Document notes tools
+# ---------------------------------------------------------------------------
+
+
+@documents.tool
+def list_document_notes(document_id: int) -> list[DocumentNote]:
+    """List all notes attached to a document.
+
+    Args:
+        document_id: Numeric ID of the document whose notes to retrieve.
+
+    Returns:
+        List of DocumentNote objects ordered by creation time.
+    """
+    client = get_client()
+    return client.documents.notes.list(document_id)
+
+
+@documents.tool
+def create_document_note(document_id: int, note: str) -> DocumentNote:
+    """Add a note to a document.
+
+    Args:
+        document_id: Numeric ID of the document to annotate.
+        note: Text content of the note.
+
+    Returns:
+        The created DocumentNote.
+    """
+    client = get_client()
+    return client.documents.notes.create(document_id, note=note)
+
+
+@documents.tool
+def delete_document_note(document_id: int, note_id: int) -> None:
+    """Delete a note from a document.
+
+    Args:
+        document_id: Numeric ID of the document that owns the note.
+        note_id: Numeric ID of the note to delete.
+    """
+    client = get_client()
+    client.documents.notes.delete(document_id, note_id)

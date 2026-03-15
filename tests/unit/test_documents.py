@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock
 
-from easypaperless import DocumentMetadata, SetPermissions
+from easypaperless import DocumentMetadata, DocumentNote, SetPermissions
 
 from easypaperless_mcp.tools.documents import (
     _LIST_RETURN_FIELDS,
@@ -16,9 +16,12 @@ from easypaperless_mcp.tools.documents import (
     bulk_set_document_type,
     bulk_set_permissions,
     bulk_set_storage_path,
+    create_document_note,
     delete_document,
+    delete_document_note,
     get_document,
     get_document_metadata,
+    list_document_notes,
     list_documents,
     update_document,
     upload_document,
@@ -288,7 +291,7 @@ def test_list_documents_page_omitted_when_none(patch_get_client: MagicMock) -> N
 def test_get_document_returns_filtered(patch_get_client: MagicMock) -> None:
     patch_get_client.documents.get.return_value = make_document(id=7, content="secret")
     result = get_document(7, return_fields=["id"])
-    patch_get_client.documents.get.assert_called_once_with(id=7)
+    patch_get_client.documents.get.assert_called_once_with(id=7, include_metadata=False)
     assert result.id == 7
     assert result.content is None
 
@@ -545,3 +548,144 @@ def test_bulk_set_permissions_with_set_permissions(patch_get_client: MagicMock) 
     patch_get_client.documents.bulk_set_permissions.assert_called_once_with(
         [3], set_permissions=perms, owner=None, merge=False
     )
+
+
+# ---------------------------------------------------------------------------
+# get_document — include_metadata
+# ---------------------------------------------------------------------------
+
+
+def test_get_document_passes_include_metadata_false_by_default(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.get.return_value = make_document(id=1)
+    get_document(1)
+    patch_get_client.documents.get.assert_called_once_with(id=1, include_metadata=False)
+
+
+def test_get_document_passes_include_metadata_true(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.get.return_value = make_document(id=1)
+    get_document(1, include_metadata=True)
+    patch_get_client.documents.get.assert_called_once_with(id=1, include_metadata=True)
+
+
+# ---------------------------------------------------------------------------
+# update_document — custom_fields, owner/clear_owner, set_permissions
+# ---------------------------------------------------------------------------
+
+
+def test_update_document_passes_custom_fields(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.update.return_value = make_document(id=1)
+    fields = [{"field": 1, "value": "foo"}, {"field": 2, "value": 42}]
+    update_document(1, custom_fields=fields)
+    assert patch_get_client.documents.update.call_args.kwargs["custom_fields"] == fields
+
+
+def test_update_document_passes_owner(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.update.return_value = make_document(id=1)
+    update_document(1, owner=7)
+    assert patch_get_client.documents.update.call_args.kwargs["owner"] == 7
+
+
+def test_update_document_clear_owner(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.update.return_value = make_document(id=1)
+    update_document(1, clear_owner=True)
+    assert patch_get_client.documents.update.call_args.kwargs["owner"] is None
+
+
+def test_update_document_clear_owner_takes_precedence(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.update.return_value = make_document(id=1)
+    update_document(1, owner=5, clear_owner=True)
+    assert patch_get_client.documents.update.call_args.kwargs["owner"] is None
+
+
+def test_update_document_passes_set_permissions(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.update.return_value = make_document(id=1)
+    perms = MagicMock(spec=SetPermissions)
+    update_document(1, set_permissions=perms)
+    assert patch_get_client.documents.update.call_args.kwargs["set_permissions"] is perms
+
+
+def test_update_document_omits_owner_when_not_provided(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.update.return_value = make_document(id=1)
+    update_document(1, title="X")
+    assert "owner" not in patch_get_client.documents.update.call_args.kwargs
+
+
+def test_update_document_omits_set_permissions_when_not_provided(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.update.return_value = make_document(id=1)
+    update_document(1, title="X")
+    assert "set_permissions" not in patch_get_client.documents.update.call_args.kwargs
+
+
+# ---------------------------------------------------------------------------
+# upload_document — custom_fields
+# ---------------------------------------------------------------------------
+
+
+def test_upload_document_passes_custom_fields(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.upload.return_value = "task-id"
+    fields = [{"field": 3, "value": "bar"}]
+    upload_document("/tmp/file.pdf", custom_fields=fields)
+    assert patch_get_client.documents.upload.call_args.kwargs["custom_fields"] == fields
+
+
+def test_upload_document_omits_custom_fields_when_none(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.upload.return_value = "task-id"
+    upload_document("/tmp/file.pdf")
+    assert "custom_fields" not in patch_get_client.documents.upload.call_args.kwargs
+
+
+# ---------------------------------------------------------------------------
+# list_documents — inclusive date bounds
+# ---------------------------------------------------------------------------
+
+
+def test_list_documents_passes_added_from_and_until(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.list.return_value = []
+    list_documents(added_from="2024-01-01T00:00:00Z", added_until="2024-12-31T23:59:59Z")
+    call_kwargs = patch_get_client.documents.list.call_args.kwargs
+    assert call_kwargs["added_from"] == "2024-01-01T00:00:00Z"
+    assert call_kwargs["added_until"] == "2024-12-31T23:59:59Z"
+
+
+def test_list_documents_passes_modified_from_and_until(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.list.return_value = []
+    list_documents(modified_from="2024-06-01T00:00:00Z", modified_until="2024-06-30T23:59:59Z")
+    call_kwargs = patch_get_client.documents.list.call_args.kwargs
+    assert call_kwargs["modified_from"] == "2024-06-01T00:00:00Z"
+    assert call_kwargs["modified_until"] == "2024-06-30T23:59:59Z"
+
+
+def test_list_documents_omits_inclusive_date_bounds_when_none(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.list.return_value = []
+    list_documents()
+    call_kwargs = patch_get_client.documents.list.call_args.kwargs
+    assert "added_from" not in call_kwargs
+    assert "added_until" not in call_kwargs
+    assert "modified_from" not in call_kwargs
+    assert "modified_until" not in call_kwargs
+
+
+# ---------------------------------------------------------------------------
+# document notes
+# ---------------------------------------------------------------------------
+
+
+def test_list_document_notes_calls_client(patch_get_client: MagicMock) -> None:
+    mock_note = MagicMock(spec=DocumentNote)
+    patch_get_client.documents.notes.list.return_value = [mock_note]
+    result = list_document_notes(42)
+    patch_get_client.documents.notes.list.assert_called_once_with(42)
+    assert result == [mock_note]
+
+
+def test_create_document_note_calls_client(patch_get_client: MagicMock) -> None:
+    mock_note = MagicMock(spec=DocumentNote)
+    patch_get_client.documents.notes.create.return_value = mock_note
+    result = create_document_note(42, "Hello note")
+    patch_get_client.documents.notes.create.assert_called_once_with(42, note="Hello note")
+    assert result is mock_note
+
+
+def test_delete_document_note_calls_client(patch_get_client: MagicMock) -> None:
+    delete_document_note(42, 7)
+    patch_get_client.documents.notes.delete.assert_called_once_with(42, 7)
