@@ -52,6 +52,15 @@ def test_filter_fields_noop_when_all_listed() -> None:
     assert result is doc
 
 
+def test_filter_fields_list_fields_use_empty_list_not_none() -> None:
+    """Regression: non-nullable list fields must not be set to None."""
+    doc = make_document(tags=[1, 2], notes=[], custom_fields=[])
+    result = _filter_fields(doc, ["id", "title"])
+    assert result.tags == []
+    assert result.notes == []
+    assert result.custom_fields == []
+
+
 # ---------------------------------------------------------------------------
 # list_documents
 # ---------------------------------------------------------------------------
@@ -81,7 +90,7 @@ def test_list_documents_return_fields_id_title_only(patch_get_client: MagicMock)
     assert doc.title == "Hello"
     assert doc.correspondent is None
     assert doc.document_type is None
-    assert doc.tags is None
+    assert doc.tags == []
     assert doc.archive_serial_number is None
     assert doc.created is None
     assert doc.content is None

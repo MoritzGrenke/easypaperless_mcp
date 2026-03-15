@@ -4,6 +4,7 @@ from typing import Any
 
 from easypaperless import Document, DocumentMetadata, SetPermissions
 from fastmcp import FastMCP
+from pydantic.fields import PydanticUndefined
 
 from ..client import get_client
 
@@ -36,20 +37,35 @@ _GET_RETURN_FIELDS: list[str] = [
 
 
 def _filter_fields(doc: Document, return_fields: list[str]) -> Document:
-    """Return a copy of doc with all fields not in return_fields set to None.
+    """Return a copy of doc with all fields not in return_fields set to their type-appropriate empty value.
+
+    Fields are set to their ``default_factory`` result (e.g. ``[]`` for list
+    fields), their ``default`` value, or ``None`` for Optional fields — in that
+    priority order. Required fields with no default are set to ``None`` as a
+    last resort (they should always be included in ``return_fields``).
 
     Args:
         doc: The document to filter.
-        return_fields: Field names to preserve; all others are set to None.
+        return_fields: Field names to preserve; all others are emptied.
 
     Returns:
-        A model_copy of the document with non-listed fields nulled out.
+        A model_copy of the document with non-listed fields emptied.
     """
     all_fields = set(doc.__class__.model_fields)
-    to_null: dict[str, Any] = {f: None for f in all_fields if f not in return_fields}
-    if not to_null:
+    to_update: dict[str, Any] = {}
+    for f in all_fields:
+        if f in return_fields:
+            continue
+        field_info = doc.__class__.model_fields[f]
+        if field_info.default_factory is not None:
+            to_update[f] = field_info.default_factory()
+        elif field_info.default is not PydanticUndefined:
+            to_update[f] = field_info.default
+        else:
+            to_update[f] = None
+    if not to_update:
         return doc
-    return doc.model_copy(update=to_null)
+    return doc.model_copy(update=to_update)
 
 
 # ---------------------------------------------------------------------------
