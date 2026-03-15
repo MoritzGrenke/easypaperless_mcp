@@ -3,6 +3,7 @@ import os
 from fastmcp import FastMCP
 
 from .tools.correspondents import correspondents
+from .tools.custom_fields import custom_fields
 from .tools.documents import documents
 from .tools.tags import tags
 
@@ -10,6 +11,7 @@ mcp = FastMCP("easypaperless")
 mcp.mount(documents)
 mcp.mount(tags)
 mcp.mount(correspondents)
+mcp.mount(custom_fields)
 
 
 def main() -> None:

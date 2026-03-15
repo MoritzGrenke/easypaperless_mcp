@@ -1,6 +1,6 @@
 # Feature Index
 
-**Next Available ID:** 0009
+**Next Available ID:** 0010
 
 | ID | Type | Name | Status | File |
 |----|------|------|--------|------|
@@ -12,3 +12,4 @@
 | 0006 | refactoring | Remove `clear_*` params from `update_document`, use `None` to clear nullable fields | QA PASSED | [0006-refactoring-remove_clear_params_from_update_document.md](0006-refactoring-remove_clear_params_from_update_document.md) |
 | 0007 | refactoring | Rename `document_id`/`document_ids` params to `id`/`ids` in documents tools | QA PASSED | [0007-refactoring-rename_document_id_params_to_id.md](0007-refactoring-rename_document_id_params_to_id.md) |
 | 0008 | feature | Correspondents sub-server with full resource tool coverage | QA PASSED | [0008-feature-correspondents_subserver_and_tools.md](0008-feature-correspondents_subserver_and_tools.md) |
+| 0009 | feature | Custom fields sub-server with full resource tool coverage | QA PASSED | [0009-feature-custom_fields_subserver_and_tools.md](0009-feature-custom_fields_subserver_and_tools.md) |
