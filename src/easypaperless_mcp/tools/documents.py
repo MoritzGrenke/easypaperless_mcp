@@ -2,11 +2,14 @@
 
 from typing import Any
 
-from easypaperless import Document, DocumentMetadata, DocumentNote, SetPermissions
+from easypaperless import UNSET, Document, DocumentMetadata, DocumentNote, SetPermissions
 from fastmcp import FastMCP
 from pydantic.fields import PydanticUndefined
 
 from ..client import get_client
+
+# Typed alias so mypy accepts UNSET as a default for any optional param type.
+_UNSET: Any = UNSET
 
 documents = FastMCP("documents")
 
@@ -321,45 +324,40 @@ def update_document(
     title: str | None = None,
     content: str | None = None,
     created: str | None = None,
-    correspondent: int | str | None = None,
-    clear_correspondent: bool = False,
-    document_type: int | str | None = None,
-    clear_document_type: bool = False,
-    storage_path: int | str | None = None,
-    clear_storage_path: bool = False,
+    correspondent: int | str | None = _UNSET,
+    document_type: int | str | None = _UNSET,
+    storage_path: int | str | None = _UNSET,
     tags: list[int | str] | None = None,
-    archive_serial_number: int | None = None,
-    clear_archive_serial_number: bool = False,
+    archive_serial_number: int | None = _UNSET,
     custom_fields: list[dict[str, Any]] | None = None,
-    owner: int | None = None,
-    clear_owner: bool = False,
+    owner: int | None = _UNSET,
     set_permissions: SetPermissions | None = None,
     remove_inbox_tags: bool | None = None,
 ) -> Document:
     """Partially update a document (PATCH semantics).
 
-    Only fields that are explicitly provided are sent to the API. Fields
-    omitted (left as None) are not changed. To explicitly clear an optional
-    relational field, set the corresponding clear_* flag to True.
+    Only fields that are explicitly provided are sent to the API. Omitting a
+    field leaves it unchanged on the server. Passing None for a nullable field
+    clears it (removes the assigned value).
 
     Args:
         document_id: Numeric ID of the document to update.
         title: New document title.
         content: OCR text content.
         created: Creation date as ISO-8601 string ("YYYY-MM-DD").
-        correspondent: Correspondent to assign (ID or name).
-        clear_correspondent: Set True to remove the correspondent.
-        document_type: Document type to assign (ID or name).
-        clear_document_type: Set True to remove the document type.
-        storage_path: Storage path to assign (ID or name).
-        clear_storage_path: Set True to remove the storage path.
+        correspondent: Correspondent to assign (ID or name). Omit to leave
+            unchanged, or pass None to clear.
+        document_type: Document type to assign (ID or name). Omit to leave
+            unchanged, or pass None to clear.
+        storage_path: Storage path to assign (ID or name). Omit to leave
+            unchanged, or pass None to clear.
         tags: Full replacement list of tags (IDs or names).
-        archive_serial_number: Archive serial number to assign.
-        clear_archive_serial_number: Set True to remove the ASN.
+        archive_serial_number: Archive serial number to assign. Omit to leave
+            unchanged, or pass None to clear.
         custom_fields: List of custom field value dicts, each in the form
             {"field": <field_id>, "value": <value>}.
-        owner: Numeric user ID to assign as document owner.
-        clear_owner: Set True to remove the owner.
+        owner: Numeric user ID to assign as document owner. Omit to leave
+            unchanged, or pass None to clear.
         set_permissions: Explicit view/change permission sets.
         remove_inbox_tags: When True, removes all inbox tags from the document.
 
@@ -376,35 +374,25 @@ def update_document(
     if created is not None:
         kwargs["created"] = created
 
-    if clear_correspondent:
-        kwargs["correspondent"] = None
-    elif correspondent is not None:
+    if correspondent is not UNSET:
         kwargs["correspondent"] = correspondent
 
-    if clear_document_type:
-        kwargs["document_type"] = None
-    elif document_type is not None:
+    if document_type is not UNSET:
         kwargs["document_type"] = document_type
 
-    if clear_storage_path:
-        kwargs["storage_path"] = None
-    elif storage_path is not None:
+    if storage_path is not UNSET:
         kwargs["storage_path"] = storage_path
 
     if tags is not None:
         kwargs["tags"] = tags
 
-    if clear_archive_serial_number:
-        kwargs["archive_serial_number"] = None
-    elif archive_serial_number is not None:
+    if archive_serial_number is not UNSET:
         kwargs["archive_serial_number"] = archive_serial_number
 
     if custom_fields is not None:
         kwargs["custom_fields"] = custom_fields
 
-    if clear_owner:
-        kwargs["owner"] = None
-    elif owner is not None:
+    if owner is not UNSET:
         kwargs["owner"] = owner
 
     if set_permissions is not None:

@@ -1,6 +1,6 @@
 # Feature Index
 
-**Next Available ID:** 0005
+**Next Available ID:** 0007
 
 | ID | Type | Name | Status | File |
 |----|------|------|--------|------|
@@ -8,3 +8,5 @@
 | 0002 | feature | Full parameter coverage for list_documents tool | QA PASSED | [0002-feature-list_documents_full_parameter_coverage.md](0002-feature-list_documents_full_parameter_coverage.md) |
 | 0003 | bug | `return_fields` filtering sets non-nullable fields to None, breaking output validation | QA PASSED | [0003-bug-filter_fields_none_breaks_validation.md](0003-bug-filter_fields_none_breaks_validation.md) |
 | 0004 | bug | Documents tools have incomplete easypaperless API coverage | QA PASSED | [0004-bug-documents_tools_incomplete_api_coverage.md](0004-bug-documents_tools_incomplete_api_coverage.md) |
+| 0005 | feature | Tags sub-server with full resource tool coverage | QA PASSED | [0005-feature-tags_subserver_and_tools.md](0005-feature-tags_subserver_and_tools.md) |
+| 0006 | refactoring | Remove `clear_*` params from `update_document`, use `None` to clear nullable fields | QA PASSED | [0006-refactoring-remove_clear_params_from_update_document.md](0006-refactoring-remove_clear_params_from_update_document.md) |

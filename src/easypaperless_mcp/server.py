@@ -3,9 +3,11 @@ import os
 from fastmcp import FastMCP
 
 from .tools.documents import documents
+from .tools.tags import tags
 
 mcp = FastMCP("easypaperless")
 mcp.mount(documents)
+mcp.mount(tags)
 
 
 def main() -> None:

@@ -347,28 +347,28 @@ def test_update_document_only_sends_provided_fields(patch_get_client: MagicMock)
     assert "content" not in call_args.kwargs
 
 
-def test_update_document_clear_correspondent(patch_get_client: MagicMock) -> None:
+def test_update_document_none_clears_correspondent(patch_get_client: MagicMock) -> None:
     patch_get_client.documents.update.return_value = make_document(id=1)
-    update_document(1, clear_correspondent=True)
+    update_document(1, correspondent=None)
     call_kwargs = patch_get_client.documents.update.call_args.kwargs
     assert call_kwargs["correspondent"] is None
 
 
-def test_update_document_clear_document_type(patch_get_client: MagicMock) -> None:
+def test_update_document_none_clears_document_type(patch_get_client: MagicMock) -> None:
     patch_get_client.documents.update.return_value = make_document(id=1)
-    update_document(1, clear_document_type=True)
+    update_document(1, document_type=None)
     assert patch_get_client.documents.update.call_args.kwargs["document_type"] is None
 
 
-def test_update_document_clear_storage_path(patch_get_client: MagicMock) -> None:
+def test_update_document_none_clears_storage_path(patch_get_client: MagicMock) -> None:
     patch_get_client.documents.update.return_value = make_document(id=1)
-    update_document(1, clear_storage_path=True)
+    update_document(1, storage_path=None)
     assert patch_get_client.documents.update.call_args.kwargs["storage_path"] is None
 
 
-def test_update_document_clear_archive_serial_number(patch_get_client: MagicMock) -> None:
+def test_update_document_none_clears_archive_serial_number(patch_get_client: MagicMock) -> None:
     patch_get_client.documents.update.return_value = make_document(id=1)
-    update_document(1, clear_archive_serial_number=True)
+    update_document(1, archive_serial_number=None)
     assert patch_get_client.documents.update.call_args.kwargs["archive_serial_number"] is None
 
 
@@ -392,11 +392,11 @@ def test_update_document_passes_remove_inbox_tags(patch_get_client: MagicMock) -
     assert patch_get_client.documents.update.call_args.kwargs["remove_inbox_tags"] is True
 
 
-def test_update_document_clear_flag_takes_precedence_over_value(patch_get_client: MagicMock) -> None:
-    """When clear_correspondent=True and correspondent=5, None is sent (clear wins)."""
+def test_update_document_omits_correspondent_when_not_provided(patch_get_client: MagicMock) -> None:
+    """Omitting correspondent sends nothing to the API (UNSET behavior)."""
     patch_get_client.documents.update.return_value = make_document(id=1)
-    update_document(1, correspondent=5, clear_correspondent=True)
-    assert patch_get_client.documents.update.call_args.kwargs["correspondent"] is None
+    update_document(1, title="X")
+    assert "correspondent" not in patch_get_client.documents.update.call_args.kwargs
 
 
 def test_update_document_no_kwargs_sent_for_none_fields(patch_get_client: MagicMock) -> None:
@@ -585,16 +585,16 @@ def test_update_document_passes_owner(patch_get_client: MagicMock) -> None:
     assert patch_get_client.documents.update.call_args.kwargs["owner"] == 7
 
 
-def test_update_document_clear_owner(patch_get_client: MagicMock) -> None:
+def test_update_document_none_clears_owner(patch_get_client: MagicMock) -> None:
     patch_get_client.documents.update.return_value = make_document(id=1)
-    update_document(1, clear_owner=True)
+    update_document(1, owner=None)
     assert patch_get_client.documents.update.call_args.kwargs["owner"] is None
 
 
-def test_update_document_clear_owner_takes_precedence(patch_get_client: MagicMock) -> None:
+def test_update_document_omits_owner_when_not_provided(patch_get_client: MagicMock) -> None:
     patch_get_client.documents.update.return_value = make_document(id=1)
-    update_document(1, owner=5, clear_owner=True)
-    assert patch_get_client.documents.update.call_args.kwargs["owner"] is None
+    update_document(1, title="X")
+    assert "owner" not in patch_get_client.documents.update.call_args.kwargs
 
 
 def test_update_document_passes_set_permissions(patch_get_client: MagicMock) -> None:
@@ -602,12 +602,6 @@ def test_update_document_passes_set_permissions(patch_get_client: MagicMock) -> 
     perms = MagicMock(spec=SetPermissions)
     update_document(1, set_permissions=perms)
     assert patch_get_client.documents.update.call_args.kwargs["set_permissions"] is perms
-
-
-def test_update_document_omits_owner_when_not_provided(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.update.return_value = make_document(id=1)
-    update_document(1, title="X")
-    assert "owner" not in patch_get_client.documents.update.call_args.kwargs
 
 
 def test_update_document_omits_set_permissions_when_not_provided(patch_get_client: MagicMock) -> None:
