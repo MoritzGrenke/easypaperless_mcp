@@ -4,6 +4,7 @@ from fastmcp import FastMCP
 
 from .tools.correspondents import correspondents
 from .tools.custom_fields import custom_fields
+from .tools.document_types import document_types
 from .tools.documents import documents
 from .tools.tags import tags
 
@@ -12,6 +13,7 @@ mcp.mount(documents)
 mcp.mount(tags)
 mcp.mount(correspondents)
 mcp.mount(custom_fields)
+mcp.mount(document_types)
 
 
 def main() -> None:

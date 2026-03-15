@@ -312,15 +312,15 @@ wheels = [
 
 [[package]]
 name = "easypaperless"
-version = "0.2.0"
+version = "0.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0e/d7/e97de87258024144e7e8ef25ffc1e058ca4eecbbe1c01eb546d802690acd/easypaperless-0.2.0.tar.gz", hash = "sha256:465db2e3e0300538e4f2fc2c0b2c1bb85b513a6a1334f6f280863a2b2fb09321", size = 352043, upload-time = "2026-03-14T14:02:50.155Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ce/ac/8e063195b008c42203671d57ad0db50ee8633ed4ea48c1194ae9f3d572bd/easypaperless-0.2.1.tar.gz", hash = "sha256:db9703f4bd15273e85f9980551091d232237b64bfabe3790ed5675f30381e504", size = 386579, upload-time = "2026-03-15T16:15:44.909Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6a/df/432b4ca26126b151deafa9ab1effdeabf35a544e2cbb47c460bc8fca4a87/easypaperless-0.2.0-py3-none-any.whl", hash = "sha256:9b3c54a0f328730b2730a4f8e99d00cb99808293d5c198f3d4d4dd15fd5669e5", size = 48105, upload-time = "2026-03-14T14:02:48.736Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/f5/3a35239dae616d198e448857cc33c37428ec8be7502e7b410ff04b425139/easypaperless-0.2.1-py3-none-any.whl", hash = "sha256:fa9be78179c7a857e69c381c0a1912b9af692f37f100ce0c726f6240df37c150", size = 52671, upload-time = "2026-03-15T16:15:43.62Z" },
 ]
 
 [[package]]
@@ -342,7 +342,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "easypaperless", specifier = ">=0.2.0" },
+    { name = "easypaperless", specifier = "==0.2.1" },
     { name = "fastmcp", specifier = ">=2.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
