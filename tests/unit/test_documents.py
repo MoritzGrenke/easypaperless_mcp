@@ -400,7 +400,7 @@ def test_update_document_omits_correspondent_when_not_provided(patch_get_client:
 
 
 def test_update_document_no_kwargs_sent_for_none_fields(patch_get_client: MagicMock) -> None:
-    """Calling with only document_id sends no extra kwargs."""
+    """Calling with only id sends no extra kwargs."""
     patch_get_client.documents.update.return_value = make_document(id=1)
     update_document(1)
     assert patch_get_client.documents.update.call_args.kwargs == {}

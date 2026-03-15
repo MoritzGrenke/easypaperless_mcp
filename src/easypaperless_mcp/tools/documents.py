@@ -277,14 +277,14 @@ def list_documents(
 
 @documents.tool
 def get_document(
-    document_id: int,
+    id: int,
     include_metadata: bool = False,
     return_fields: list[str] | None = None,
 ) -> Document:
     """Retrieve a single document by its ID with configurable field selection.
 
     Args:
-        document_id: Numeric paperless-ngx document ID.
+        id: Numeric paperless-ngx document ID.
         include_metadata: When True, fetches extended file-level metadata
             concurrently and attaches it to the document. Default: False.
         return_fields: Document fields to include in the response. All others
@@ -296,12 +296,12 @@ def get_document(
     if return_fields is None:
         return_fields = _GET_RETURN_FIELDS
     client = get_client()
-    doc = client.documents.get(id=document_id, include_metadata=include_metadata)
+    doc = client.documents.get(id=id, include_metadata=include_metadata)
     return _filter_fields(doc, return_fields)
 
 
 @documents.tool
-def get_document_metadata(document_id: int) -> DocumentMetadata:
+def get_document_metadata(id: int) -> DocumentMetadata:
     """Retrieve file-level technical metadata for a document.
 
     Returns checksums, file sizes, MIME type, and embedded file metadata
@@ -309,18 +309,18 @@ def get_document_metadata(document_id: int) -> DocumentMetadata:
     responses unless explicitly requested.
 
     Args:
-        document_id: Numeric paperless-ngx document ID.
+        id: Numeric paperless-ngx document ID.
 
     Returns:
         DocumentMetadata with checksums, sizes, MIME types, and file metadata.
     """
     client = get_client()
-    return client.documents.get_metadata(id=document_id)
+    return client.documents.get_metadata(id=id)
 
 
 @documents.tool
 def update_document(
-    document_id: int,
+    id: int,
     title: str | None = None,
     content: str | None = None,
     created: str | None = None,
@@ -341,7 +341,7 @@ def update_document(
     clears it (removes the assigned value).
 
     Args:
-        document_id: Numeric ID of the document to update.
+        id: Numeric ID of the document to update.
         title: New document title.
         content: OCR text content.
         created: Creation date as ISO-8601 string ("YYYY-MM-DD").
@@ -401,20 +401,20 @@ def update_document(
     if remove_inbox_tags is not None:
         kwargs["remove_inbox_tags"] = remove_inbox_tags
 
-    return client.documents.update(document_id, **kwargs)
+    return client.documents.update(id, **kwargs)
 
 
 @documents.tool
-def delete_document(document_id: int) -> None:
+def delete_document(id: int) -> None:
     """Permanently delete a document by its ID.
 
     This action is irreversible.
 
     Args:
-        document_id: Numeric ID of the document to delete.
+        id: Numeric ID of the document to delete.
     """
     client = get_client()
-    client.documents.delete(id=document_id)
+    client.documents.delete(id=id)
 
 
 @documents.tool
@@ -477,127 +477,127 @@ def upload_document(
 
 
 @documents.tool
-def bulk_add_tag(document_ids: list[int], tag: int | str) -> None:
+def bulk_add_tag(ids: list[int], tag: int | str) -> None:
     """Add a tag to multiple documents in a single request.
 
     Args:
-        document_ids: List of document IDs to tag.
+        ids: List of document IDs to tag.
         tag: Tag to add (ID or name).
     """
     client = get_client()
-    client.documents.bulk_add_tag(document_ids, tag)
+    client.documents.bulk_add_tag(ids, tag)
 
 
 @documents.tool
-def bulk_remove_tag(document_ids: list[int], tag: int | str) -> None:
+def bulk_remove_tag(ids: list[int], tag: int | str) -> None:
     """Remove a tag from multiple documents in a single request.
 
     Args:
-        document_ids: List of document IDs to un-tag.
+        ids: List of document IDs to un-tag.
         tag: Tag to remove (ID or name).
     """
     client = get_client()
-    client.documents.bulk_remove_tag(document_ids, tag)
+    client.documents.bulk_remove_tag(ids, tag)
 
 
 @documents.tool
 def bulk_modify_tags(
-    document_ids: list[int],
+    ids: list[int],
     add_tags: list[int | str] | None = None,
     remove_tags: list[int | str] | None = None,
 ) -> None:
     """Add and/or remove tags on multiple documents atomically.
 
     Args:
-        document_ids: List of document IDs to modify.
+        ids: List of document IDs to modify.
         add_tags: Tags to add (IDs or names).
         remove_tags: Tags to remove (IDs or names).
     """
     client = get_client()
-    client.documents.bulk_modify_tags(document_ids, add_tags=add_tags, remove_tags=remove_tags)
+    client.documents.bulk_modify_tags(ids, add_tags=add_tags, remove_tags=remove_tags)
 
 
 @documents.tool
-def bulk_delete_documents(document_ids: list[int]) -> None:
+def bulk_delete_documents(ids: list[int]) -> None:
     """Permanently delete multiple documents in a single request.
 
     This action is irreversible.
 
     Args:
-        document_ids: List of document IDs to delete.
+        ids: List of document IDs to delete.
     """
     client = get_client()
-    client.documents.bulk_delete(document_ids)
+    client.documents.bulk_delete(ids)
 
 
 @documents.tool
 def bulk_set_correspondent(
-    document_ids: list[int],
+    ids: list[int],
     correspondent: int | str | None,
 ) -> None:
     """Assign or clear a correspondent on multiple documents.
 
     Args:
-        document_ids: List of document IDs to modify.
+        ids: List of document IDs to modify.
         correspondent: Correspondent to assign (ID or name), or None to clear.
     """
     client = get_client()
-    client.documents.bulk_set_correspondent(document_ids, correspondent)
+    client.documents.bulk_set_correspondent(ids, correspondent)
 
 
 @documents.tool
 def bulk_set_document_type(
-    document_ids: list[int],
+    ids: list[int],
     document_type: int | str | None,
 ) -> None:
     """Assign or clear a document type on multiple documents.
 
     Args:
-        document_ids: List of document IDs to modify.
+        ids: List of document IDs to modify.
         document_type: Document type to assign (ID or name), or None to clear.
     """
     client = get_client()
-    client.documents.bulk_set_document_type(document_ids, document_type)
+    client.documents.bulk_set_document_type(ids, document_type)
 
 
 @documents.tool
 def bulk_set_storage_path(
-    document_ids: list[int],
+    ids: list[int],
     storage_path: int | str | None,
 ) -> None:
     """Assign or clear a storage path on multiple documents.
 
     Args:
-        document_ids: List of document IDs to modify.
+        ids: List of document IDs to modify.
         storage_path: Storage path to assign (ID or name), or None to clear.
     """
     client = get_client()
-    client.documents.bulk_set_storage_path(document_ids, storage_path)
+    client.documents.bulk_set_storage_path(ids, storage_path)
 
 
 @documents.tool
 def bulk_modify_custom_fields(
-    document_ids: list[int],
+    ids: list[int],
     add_fields: list[dict[str, Any]] | None = None,
     remove_fields: list[int] | None = None,
 ) -> None:
     """Add and/or remove custom field values on multiple documents.
 
     Args:
-        document_ids: List of document IDs to modify.
+        ids: List of document IDs to modify.
         add_fields: Custom field value dicts to add, each in the form
             {"field": <field_id>, "value": <value>}.
         remove_fields: Custom field IDs whose values should be removed.
     """
     client = get_client()
     client.documents.bulk_modify_custom_fields(
-        document_ids, add_fields=add_fields, remove_fields=remove_fields
+        ids, add_fields=add_fields, remove_fields=remove_fields
     )
 
 
 @documents.tool
 def bulk_set_permissions(
-    document_ids: list[int],
+    ids: list[int],
     set_permissions: SetPermissions | None = None,
     owner: int | None = None,
     merge: bool = False,
@@ -605,7 +605,7 @@ def bulk_set_permissions(
     """Set permissions and/or owner on multiple documents.
 
     Args:
-        document_ids: List of document IDs to modify.
+        ids: List of document IDs to modify.
         set_permissions: Explicit view/change permission sets. Contains
             view.users, view.groups, change.users, change.groups lists.
         owner: Numeric user ID to assign as document owner.
@@ -614,7 +614,7 @@ def bulk_set_permissions(
     """
     client = get_client()
     client.documents.bulk_set_permissions(
-        document_ids, set_permissions=set_permissions, owner=owner, merge=merge
+        ids, set_permissions=set_permissions, owner=owner, merge=merge
     )
 
 
@@ -624,41 +624,41 @@ def bulk_set_permissions(
 
 
 @documents.tool
-def list_document_notes(document_id: int) -> list[DocumentNote]:
+def list_document_notes(id: int) -> list[DocumentNote]:
     """List all notes attached to a document.
 
     Args:
-        document_id: Numeric ID of the document whose notes to retrieve.
+        id: Numeric ID of the document whose notes to retrieve.
 
     Returns:
         List of DocumentNote objects ordered by creation time.
     """
     client = get_client()
-    return client.documents.notes.list(document_id)
+    return client.documents.notes.list(id)
 
 
 @documents.tool
-def create_document_note(document_id: int, note: str) -> DocumentNote:
+def create_document_note(id: int, note: str) -> DocumentNote:
     """Add a note to a document.
 
     Args:
-        document_id: Numeric ID of the document to annotate.
+        id: Numeric ID of the document to annotate.
         note: Text content of the note.
 
     Returns:
         The created DocumentNote.
     """
     client = get_client()
-    return client.documents.notes.create(document_id, note=note)
+    return client.documents.notes.create(id, note=note)
 
 
 @documents.tool
-def delete_document_note(document_id: int, note_id: int) -> None:
+def delete_document_note(id: int, note_id: int) -> None:
     """Delete a note from a document.
 
     Args:
-        document_id: Numeric ID of the document that owns the note.
+        id: Numeric ID of the document that owns the note.
         note_id: Numeric ID of the note to delete.
     """
     client = get_client()
-    client.documents.notes.delete(document_id, note_id)
+    client.documents.notes.delete(id, note_id)
