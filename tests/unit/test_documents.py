@@ -6,7 +6,6 @@ from easypaperless import DocumentMetadata, SetPermissions
 
 from easypaperless_mcp.tools.documents import (
     _LIST_RETURN_FIELDS,
-    _GET_RETURN_FIELDS,
     _filter_fields,
     bulk_add_tag,
     bulk_delete_documents,

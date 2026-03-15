@@ -141,3 +141,49 @@ Group additions by category:
 - easypaperless documents API reference: https://moritzgrenke.github.io/easypaperless/easypaperless/resources.html
 - The full `list()` signature was verified from `.venv/Lib/site-packages/easypaperless/_internal/resources/documents.py`
 - The alias parameters (`added_from`, `added_until`, `modified_from`, `modified_until`) exist in easypaperless but are redundant with `added_after/before` and `modified_after/before` — only the canonical forms should be exposed
+
+---
+
+## QA
+
+**Tested by:** QA Engineer
+**Date:** 2026-03-15
+**Commit:** 9834663
+
+### Test Results
+
+| # | Test Case | Expected | Actual | Status |
+|---|-----------|----------|--------|--------|
+| 1 | AC: `ids` parameter accepted and passed through | `ids=[1,2,3]` forwarded to `documents.list()` | Forwarded correctly; absent when `None` | ✅ Pass |
+| 2 | AC: `any_tags` and `exclude_tags` alongside `tags` | All three tag params work independently | All three present and forwarded correctly | ✅ Pass |
+| 3 | AC: `any_correspondent`, `exclude_correspondents` | Both params present and forwarded | Present and correctly gated on `is not None` | ✅ Pass |
+| 4 | AC: `any_document_type`, `exclude_document_types`, `document_type_name_contains`, `document_type_name_exact` | All 4 present | All 4 present and tested | ✅ Pass |
+| 5 | AC: `any_storage_paths`, `exclude_storage_paths` | Both present | Present and forwarded | ✅ Pass |
+| 6 | AC: `owner`, `exclude_owners` | Both present | Present and forwarded | ✅ Pass |
+| 7 | AC: `custom_fields`, `any_custom_fields`, `exclude_custom_fields`, `custom_field_query` | All 4 present | All 4 present, `custom_field_query` typed as `list[Any]` | ✅ Pass |
+| 8 | AC: `archive_serial_number`, `archive_serial_number_from`, `archive_serial_number_till` | All 3 present | All 3 present and tested | ✅ Pass |
+| 9 | AC: `added_after`, `added_before`, `modified_after`, `modified_before` | ISO string params present | All 4 present; aliases (`added_from` etc.) not exposed | ✅ Pass |
+| 10 | AC: `checksum` | Present and forwarded | Present | ✅ Pass |
+| 11 | AC: `page`, `page_size`, `descending` | All 3 present with correct defaults | `page` optional (omitted when `None`), `page_size=25`, `descending=False` | ✅ Pass |
+| 12 | AC: `on_page` NOT exposed as parameter | Absent from tool signature | Not present | ✅ Pass |
+| 13 | AC: All existing parameters unchanged | `search`, `search_mode`, `tags`, `correspondent`, `document_type`, `storage_path`, `ordering`, `max_results`, `return_fields` still present | All present, unchanged | ✅ Pass |
+| 14 | AC: Tool docstring documents every parameter | All params documented | All 35+ parameters documented in the docstring | ✅ Pass |
+| 15 | AC: Unit tests cover new parameters (pass-through assertions) | Each new param group has at least one test | 13 targeted tests for new params; all pass | ✅ Pass |
+| 16 | AC: None-valued params not forwarded to `documents.list()` | Absent from call kwargs | `test_list_documents_omits_none_filters` confirms this; `page` omitted when None | ✅ Pass |
+| 17 | Automated unit tests | All pass | 57/57 passed | ✅ Pass |
+| 18 | Ruff lint check (`src/`) | No errors | No errors in `src/` | ✅ Pass |
+| 19 | Integration: live filtering smoke test | N/A | Untested — requires live paperless-ngx instance | ⚪ Skip |
+
+### Bugs Found
+
+No bugs found specific to issue 0002. See BUG-001 and BUG-002 in issue 0001 (shared test/toolchain issues).
+
+### Automated Tests
+- Suite: `tests/unit` — 57 passed, 0 failed
+- New param coverage: 13 dedicated pass-through tests
+
+### Summary
+- ACs tested: 15/15 (1 untested — integration, requires live infra)
+- ACs passing: 15/15
+- Bugs found: 0
+- Recommendation: ✅ Ready to merge
