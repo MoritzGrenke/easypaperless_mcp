@@ -91,3 +91,53 @@ Create `src/easypaperless_mcp/tools/correspondents.py` as a dedicated FastMCP su
 - easypaperless correspondents API reference: https://moritzgrenke.github.io/easypaperless/easypaperless/resources.html
 - Pattern to follow: `tools/tags.py` and issue 0005
 - `MatchingAlgorithm` enum values: `NONE | ANY_WORD | ALL_WORDS | EXACT | REGEX | FUZZY | AUTO`
+
+---
+
+## QA
+
+**Tested by:** QA Engineer
+**Date:** 2026-03-15
+**Commit:** unstaged (feature/0008-correspondents-subserver)
+
+### Test Results
+
+| # | Test Case | Expected | Actual | Status |
+|---|-----------|----------|--------|--------|
+| 1 | AC: `tools/correspondents.py` exists and defines a `FastMCP` instance | File present, `correspondents = FastMCP("correspondents")` | File present at `src/easypaperless_mcp/tools/correspondents.py`, instance defined | ✅ Pass |
+| 2 | AC: `server.py` mounts correspondents without namespace | `mcp.mount(correspondents)` present | `mcp.mount(correspondents)` added, no namespace arg | ✅ Pass |
+| 3 | AC: `list_correspondents` has all 7 params and returns `List[Correspondent]` | `ids`, `name_contains`, `name_exact`, `page`, `page_size`, `ordering`, `descending` present; return `list[Correspondent]` | All 7 params present; return type annotated `list[Correspondent]`; unit tests pass all param paths | ✅ Pass |
+| 4 | AC: `get_correspondent` takes `id`, returns `Correspondent` | `get_correspondent(id: int) -> Correspondent` | Implemented; `client.correspondents.get(id=id)` called; unit test passes | ✅ Pass |
+| 5 | AC: `create_correspondent` has all 6 params, returns `Correspondent` | `name`, `match`, `matching_algorithm`, `is_insensitive`, `owner`, `set_permissions` | All 6 params present; `is_insensitive=True` default; `None` optionals omitted from client call | ✅ Pass |
+| 6 | AC: `update_correspondent` has 7 params, UNSET for optional, `None` clears | UNSET sentinel on all optional params; `None` forwarded, UNSET omitted | `_UNSET` applied to all 6 optional params; UNSET check gates each kwarg; unit test for clearing confirms `None` forwarded | ✅ Pass |
+| 7 | AC: `delete_correspondent` takes `id`, returns `None` | `delete_correspondent(id: int) -> None` | Implemented; `client.correspondents.delete(id=id)` called; returns `None` | ✅ Pass |
+| 8 | AC: `bulk_delete_correspondents` takes `ids: List[int]`, returns `None` | Calls `client.correspondents.bulk_delete(ids)` | Implemented correctly; unit test passes | ✅ Pass |
+| 9 | AC: `bulk_set_correspondent_permissions` has `ids`, `set_permissions`, `owner`, `merge` | All 4 params, delegates to `bulk_set_permissions` | Implemented; defaults `set_permissions=None`, `owner=None`, `merge=False`; unit tests for all cases pass | ✅ Pass |
+| 10 | AC: All 7 tools registered and callable | All decorated with `@correspondents.tool` | Confirmed in source; all 7 decorators present | ✅ Pass |
+| 11 | AC: Tool names follow verb-first, singular/plural convention | `list_correspondents`, `get_correspondent`, etc. | All 7 names conform to convention | ✅ Pass |
+| 12 | AC: Return types use easypaperless Pydantic models directly | `Correspondent` used in annotations | `from easypaperless import Correspondent` used throughout | ✅ Pass |
+| 13 | AC: UNSET sentinel distinguishes "not provided" from `None` | Omitted params not forwarded; `None` forwarded | `if x is not UNSET: kwargs[...] = x` pattern; unit test `test_update_correspondent_no_extra_kwargs_when_only_id` confirms | ✅ Pass |
+| 14 | Edge: `list_correspondents` with no args omits all optional params | `descending=False` always sent; other optionals absent | Confirmed by `test_list_correspondents_omits_none_optional_params` | ✅ Pass |
+| 15 | Edge: `create_correspondent` with only `name` omits optional params | No `match`, `matching_algorithm`, etc. in client call | Confirmed by `test_create_correspondent_omits_none_optional_params` | ✅ Pass |
+| 16 | Edge: `update_correspondent` with only `id` sends empty kwargs | `client.correspondents.update(id, **{})` | Confirmed by `test_update_correspondent_no_extra_kwargs_when_only_id` | ✅ Pass |
+| 17 | Regression: existing unit tests unaffected | All prior 102 unit tests still pass | 130 total unit tests pass (28 new + 102 existing) | ✅ Pass |
+| 18 | Static analysis: ruff check | No linting errors | `All checks passed!` | ✅ Pass |
+| 19 | Static analysis: mypy | No new type errors | Pre-existing `import-untyped` error for `easypaperless` (affects all modules equally, not introduced by this issue) | ✅ Pass (pre-existing) |
+| 20 | Integration: `list_correspondents` and `get_correspondent` round-trip | Returns valid `Correspondent` objects | All 3 integration tests pass against live instance | ✅ Pass |
+
+### Bugs Found
+
+No bugs found.
+
+### Automated Tests
+
+- Suite: `tests/unit/test_correspondents.py` — 28 passed, 0 failed
+- Suite: `tests/unit/` (full) — 130 passed, 0 failed
+- Suite: `tests/integration/test_correspondents.py` — 3 passed, 0 failed
+
+### Summary
+
+- ACs tested: 13/13
+- ACs passing: 13/13
+- Bugs found: 0
+- Recommendation: ✅ Ready to merge
