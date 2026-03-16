@@ -130,8 +130,8 @@ def list_documents(
     page: int | None = None,
     page_size: int = 25,
     descending: bool = False,
-    max_results: int = 25,
-    return_fields: list[str] | None = None,
+    max_results: int = 10,
+    return_fields: list[str] | None = ["id", "title", "created", "search_hit"],
 ) -> list[Document]:
     """List documents from paperless-ngx with optional filtering.
 
@@ -140,8 +140,11 @@ def list_documents(
 
     Args:
         search: Search string applied according to search_mode.
-        search_mode: How search is applied. One of: "title_or_content" (default),
-            "title", "query", "original_filename".
+        search_mode: How search is applied. One of: 
+            "title_or_content" (default), "title", "original_filename",
+            "query" - complex search Whoosh query. Supports: phrases "foo bar", wildcards appl*/appl?, 
+            boolean AND OR NOT (uppercase), field search title:word. Default operator: AND. 
+            searches in title, content, notes, custom_fields, and more fields
         ids: Restrict results to this specific set of document IDs.
         tags: Filter to documents that have ALL of these tags (IDs or names).
         any_tags: Filter to documents that have ANY of these tags (IDs or names).
@@ -162,9 +165,12 @@ def list_documents(
         custom_fields: Filter to documents with ALL of these custom fields set (IDs or names).
         any_custom_fields: Filter to documents with ANY of these custom fields set (IDs or names).
         exclude_custom_fields: Exclude documents with ANY of these custom fields set (IDs or names).
-        custom_field_query: Advanced custom field query expression. A nested list structure
-            following the easypaperless query DSL, e.g.
-            ["AND", [["field_id", "exact", "value"], ["field_id2", "exists", True]]].
+        custom_field_query: Filter by custom field values using JSON arrays: ["field_name", "operator", value].
+            Operators: exact, in, isnull, exists (all types) | icontains, istartswith, iendswith (text/URL) 
+            | gt, gte, lt, lte, range (numbers/dates) | contains (doc links).
+            Use ["AND", [[...], [...]]] or ["OR", [[...], [...]]] to combine multiple conditions; 
+            nesting is supported. Examples: ["due","range",["2024-08-01","2024-09-01"]] 
+            | ["customer","exact","bob"] | ["refs","contains",[3,7]]
         created_after: ISO date string — only documents created after this date.
         created_before: ISO date string — only documents created before this date.
         added_after: ISO datetime string — only documents added after this datetime (exclusive).
@@ -183,9 +189,10 @@ def list_documents(
         page: Page number for manual pagination.
         page_size: Number of results per page. Default: 25.
         descending: Reverse the ordering direction. Default: False.
-        max_results: Maximum number of documents to return. Default: 25.
+        max_results: Maximum number of documents to return. Default: 10.
         return_fields: Document fields to include in the response. All others
-            are set to None. Defaults to a compact summary set.
+            are set to None. Defaults to the compact summary set ["id", "title", "created", "search_hit"].
+            Set to None if you want to receive the full set.
 
     Returns:
         List of Document objects with only return_fields populated.
