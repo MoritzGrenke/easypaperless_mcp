@@ -7,6 +7,7 @@ from fastmcp import FastMCP
 from pydantic.fields import PydanticUndefined  # type: ignore[attr-defined]
 
 from ..client import get_client
+from .models import ListResult
 
 # Typed alias so mypy accepts UNSET as a default for any optional param type.
 _UNSET: Any = UNSET
@@ -132,7 +133,7 @@ def list_documents(
     descending: bool = False,
     max_results: int = 10,
     return_fields: list[str] | None = ["id", "title", "created", "search_hit"],
-) -> list[Document]:
+) -> ListResult[Document]:
     """List documents from paperless-ngx with optional filtering.
 
     Only the fields listed in return_fields are populated; all others are set
@@ -195,7 +196,8 @@ def list_documents(
             Set to None if you want to receive the full set.
 
     Returns:
-        List of Document objects with only return_fields populated.
+        ListResult with count (total matching documents in paperless-ngx) and
+        items (Document objects with only return_fields populated).
     """
     if return_fields is None:
         return_fields = _LIST_RETURN_FIELDS
@@ -278,8 +280,11 @@ def list_documents(
         kwargs["ordering"] = ordering
     if page is not None:
         kwargs["page"] = page
-    docs = client.documents.list(**kwargs).results
-    return [_filter_fields(doc, return_fields) for doc in docs]
+    paged = client.documents.list(**kwargs)
+    return ListResult(
+        count=paged.count,
+        items=[_filter_fields(doc, return_fields) for doc in paged.results],
+    )
 
 
 @documents.tool

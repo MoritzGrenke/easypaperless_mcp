@@ -3,6 +3,7 @@
 import pytest
 from easypaperless import StoragePath, SyncPaperlessClient
 
+from easypaperless_mcp.tools.models import ListResult
 from easypaperless_mcp.tools.storage_paths import (
     bulk_delete_storage_paths,
     create_storage_path,
@@ -21,11 +22,11 @@ _TEST_NAME = "easypaperless-mcp integration test storage path"
 @pytest.fixture(scope="module")
 def existing_storage_path_id(paperless_client: SyncPaperlessClient) -> int:
     """Return the ID of the first available storage path, skipping if none exist."""
-    paths = list_storage_paths()
-    if not paths:
+    result = list_storage_paths()
+    if not result.items:
         pytest.skip("No storage paths in test instance")
-    assert paths[0].id is not None
-    return paths[0].id
+    assert result.items[0].id is not None
+    return result.items[0].id
 
 
 # ---------------------------------------------------------------------------
@@ -33,25 +34,27 @@ def existing_storage_path_id(paperless_client: SyncPaperlessClient) -> int:
 # ---------------------------------------------------------------------------
 
 
-def test_list_storage_paths_returns_list(paperless_client: SyncPaperlessClient) -> None:
+def test_list_storage_paths_returns_list_result(paperless_client: SyncPaperlessClient) -> None:
     result = list_storage_paths()
-    assert isinstance(result, list)
+    assert isinstance(result, ListResult)
+    assert isinstance(result.count, int)
+    assert isinstance(result.items, list)
 
 
 def test_list_storage_paths_returns_storage_path_objects(paperless_client: SyncPaperlessClient) -> None:
     result = list_storage_paths()
-    for sp in result:
+    for sp in result.items:
         assert isinstance(sp, StoragePath)
 
 
 def test_list_storage_paths_with_name_contains(paperless_client: SyncPaperlessClient) -> None:
     result = list_storage_paths(name_contains="")
-    assert isinstance(result, list)
+    assert isinstance(result, ListResult)
 
 
 def test_list_storage_paths_with_path_contains(paperless_client: SyncPaperlessClient) -> None:
     result = list_storage_paths(path_contains="")
-    assert isinstance(result, list)
+    assert isinstance(result, ListResult)
 
 
 # ---------------------------------------------------------------------------
@@ -89,7 +92,7 @@ def test_create_update_delete_storage_path_round_trip(paperless_client: SyncPape
     finally:
         delete_storage_path(created.id)
 
-    remaining = [sp for sp in list_storage_paths() if sp.id == created.id]
+    remaining = [sp for sp in list_storage_paths().items if sp.id == created.id]
     assert remaining == []
 
 
@@ -102,6 +105,6 @@ def test_bulk_delete_storage_paths_round_trip(paperless_client: SyncPaperlessCli
 
     bulk_delete_storage_paths([a.id, b.id])
 
-    remaining_ids = {sp.id for sp in list_storage_paths()}
+    remaining_ids = {sp.id for sp in list_storage_paths().items}
     assert a.id not in remaining_ids
     assert b.id not in remaining_ids

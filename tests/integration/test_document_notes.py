@@ -17,11 +17,11 @@ pytestmark = pytest.mark.integration
 @pytest.fixture(scope="module")
 def document_id(paperless_client: SyncPaperlessClient) -> int:
     """Return the ID of the first available document, skipping if none exist."""
-    docs = list_documents()
-    if not docs:
+    result = list_documents()
+    if not result.items:
         pytest.skip("No documents in test instance")
-    assert docs[0].id is not None
-    return docs[0].id
+    assert result.items[0].id is not None
+    return result.items[0].id
 
 
 def test_list_document_notes_returns_list(paperless_client: SyncPaperlessClient, document_id: int) -> None:

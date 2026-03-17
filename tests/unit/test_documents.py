@@ -70,25 +70,26 @@ def test_filter_fields_list_fields_use_empty_list_not_none() -> None:
 
 
 def test_list_documents_calls_client(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[make_document(id=1), make_document(id=2)])
+    patch_get_client.documents.list.return_value = MagicMock(count=2, results=[make_document(id=1), make_document(id=2)])
     result = list_documents()
     patch_get_client.documents.list.assert_called_once()
-    assert len(result) == 2
+    assert result.count == 2
+    assert len(result.items) == 2
 
 
 def test_list_documents_applies_field_filter(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[make_document(correspondent=99)])
+    patch_get_client.documents.list.return_value = MagicMock(count=1, results=[make_document(correspondent=99)])
     result = list_documents(return_fields=["id", "title"])
-    assert result[0].correspondent is None
+    assert result.items[0].correspondent is None
 
 
 def test_list_documents_return_fields_id_title_only(patch_get_client: MagicMock) -> None:
     """Only id and title survive; all other Document fields become None."""
-    patch_get_client.documents.list.return_value = MagicMock(results=[
+    patch_get_client.documents.list.return_value = MagicMock(count=1, results=[
         make_document(id=5, title="Hello", correspondent=3, document_type=2, tags=[1], archive_serial_number=99)
     ])
     result = list_documents(return_fields=["id", "title"])
-    doc = result[0]
+    doc = result.items[0]
     assert doc.id == 5
     assert doc.title == "Hello"
     assert doc.correspondent is None
@@ -101,11 +102,11 @@ def test_list_documents_return_fields_id_title_only(patch_get_client: MagicMock)
 
 def test_list_documents_default_return_fields_preserves_list_fields(patch_get_client: MagicMock) -> None:
     """Default return_fields keeps exactly _LIST_RETURN_FIELDS; content is excluded."""
-    patch_get_client.documents.list.return_value = MagicMock(results=[
+    patch_get_client.documents.list.return_value = MagicMock(count=1, results=[
         make_document(id=1, title="T", correspondent=7, tags=[2], archive_serial_number=10, content="secret")
     ])
     result = list_documents(return_fields=None)
-    doc = result[0]
+    doc = result.items[0]
     # All _LIST_RETURN_FIELDS should survive
     for field in _LIST_RETURN_FIELDS:
         # skip fields that were not set (None by default is fine)
@@ -121,23 +122,33 @@ def test_list_documents_default_return_fields_preserves_list_fields(patch_get_cl
 
 def test_list_documents_field_filter_applied_to_all_results(patch_get_client: MagicMock) -> None:
     """return_fields filter is applied to every document in the result list."""
-    patch_get_client.documents.list.return_value = MagicMock(results=[
+    patch_get_client.documents.list.return_value = MagicMock(count=3, results=[
         make_document(id=1, correspondent=10),
         make_document(id=2, correspondent=20),
         make_document(id=3, correspondent=30),
     ])
     result = list_documents(return_fields=["id"])
-    assert all(doc.correspondent is None for doc in result)
-    assert [doc.id for doc in result] == [1, 2, 3]
+    assert all(doc.correspondent is None for doc in result.items)
+    assert [doc.id for doc in result.items] == [1, 2, 3]
 
 
 def test_list_documents_empty_result(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
-    assert list_documents() == []
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
+    result = list_documents()
+    assert result.count == 0
+    assert result.items == []
+
+
+def test_list_documents_count_reflects_total_not_page(patch_get_client: MagicMock) -> None:
+    """count is the total from the server, not just len(items)."""
+    patch_get_client.documents.list.return_value = MagicMock(count=150, results=[make_document(id=1)])
+    result = list_documents()
+    assert result.count == 150
+    assert len(result.items) == 1
 
 
 def test_list_documents_passes_created_date_filters(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     list_documents(created_after="2023-01-01", created_before="2023-12-31")
     call_kwargs = patch_get_client.documents.list.call_args.kwargs
     assert call_kwargs["created_after"] == "2023-01-01"
@@ -146,7 +157,7 @@ def test_list_documents_passes_created_date_filters(patch_get_client: MagicMock)
 
 def test_list_documents_default_pagination_always_passed(patch_get_client: MagicMock) -> None:
     """page_size and descending are always forwarded even at their defaults."""
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     list_documents()
     call_kwargs = patch_get_client.documents.list.call_args.kwargs
     assert call_kwargs["page_size"] == 25
@@ -154,7 +165,7 @@ def test_list_documents_default_pagination_always_passed(patch_get_client: Magic
 
 
 def test_list_documents_passes_search(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     list_documents(search="invoice", search_mode="title")
     call_kwargs = patch_get_client.documents.list.call_args.kwargs
     assert call_kwargs["search"] == "invoice"
@@ -162,7 +173,7 @@ def test_list_documents_passes_search(patch_get_client: MagicMock) -> None:
 
 
 def test_list_documents_omits_none_filters(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     list_documents()
     call_kwargs = patch_get_client.documents.list.call_args.kwargs
     assert "search" not in call_kwargs
@@ -170,13 +181,13 @@ def test_list_documents_omits_none_filters(patch_get_client: MagicMock) -> None:
 
 
 def test_list_documents_passes_ids(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     list_documents(ids=[1, 2, 3])
     assert patch_get_client.documents.list.call_args.kwargs["ids"] == [1, 2, 3]
 
 
 def test_list_documents_passes_any_and_exclude_tags(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     list_documents(any_tags=[1, "urgent"], exclude_tags=[5])
     call_kwargs = patch_get_client.documents.list.call_args.kwargs
     assert call_kwargs["any_tags"] == [1, "urgent"]
@@ -184,7 +195,7 @@ def test_list_documents_passes_any_and_exclude_tags(patch_get_client: MagicMock)
 
 
 def test_list_documents_passes_correspondent_filters(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     list_documents(any_correspondent=[1, 2], exclude_correspondents=[3])
     call_kwargs = patch_get_client.documents.list.call_args.kwargs
     assert call_kwargs["any_correspondent"] == [1, 2]
@@ -192,7 +203,7 @@ def test_list_documents_passes_correspondent_filters(patch_get_client: MagicMock
 
 
 def test_list_documents_passes_document_type_filters(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     list_documents(
         document_type_name_contains="invoice",
         document_type_name_exact="Invoice",
@@ -207,7 +218,7 @@ def test_list_documents_passes_document_type_filters(patch_get_client: MagicMock
 
 
 def test_list_documents_passes_storage_path_filters(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     list_documents(any_storage_paths=[1], exclude_storage_paths=[2])
     call_kwargs = patch_get_client.documents.list.call_args.kwargs
     assert call_kwargs["any_storage_paths"] == [1]
@@ -215,7 +226,7 @@ def test_list_documents_passes_storage_path_filters(patch_get_client: MagicMock)
 
 
 def test_list_documents_passes_owner_filters(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     list_documents(owner=7, exclude_owners=[8, 9])
     call_kwargs = patch_get_client.documents.list.call_args.kwargs
     assert call_kwargs["owner"] == 7
@@ -223,7 +234,7 @@ def test_list_documents_passes_owner_filters(patch_get_client: MagicMock) -> Non
 
 
 def test_list_documents_passes_custom_field_filters(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     query = ["AND", [["1", "exact", "foo"]]]
     list_documents(
         custom_fields=[1],
@@ -239,7 +250,7 @@ def test_list_documents_passes_custom_field_filters(patch_get_client: MagicMock)
 
 
 def test_list_documents_passes_asn_filters(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     list_documents(archive_serial_number=42, archive_serial_number_from=10, archive_serial_number_till=50)
     call_kwargs = patch_get_client.documents.list.call_args.kwargs
     assert call_kwargs["archive_serial_number"] == 42
@@ -248,7 +259,7 @@ def test_list_documents_passes_asn_filters(patch_get_client: MagicMock) -> None:
 
 
 def test_list_documents_passes_date_filters(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     list_documents(
         added_after="2024-01-01T00:00:00Z",
         added_before="2024-12-31T23:59:59Z",
@@ -263,13 +274,13 @@ def test_list_documents_passes_date_filters(patch_get_client: MagicMock) -> None
 
 
 def test_list_documents_passes_checksum(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     list_documents(checksum="abc123def456")
     assert patch_get_client.documents.list.call_args.kwargs["checksum"] == "abc123def456"
 
 
 def test_list_documents_passes_pagination_params(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     list_documents(page=2, page_size=50, descending=True)
     call_kwargs = patch_get_client.documents.list.call_args.kwargs
     assert call_kwargs["page"] == 2
@@ -278,7 +289,7 @@ def test_list_documents_passes_pagination_params(patch_get_client: MagicMock) ->
 
 
 def test_list_documents_page_omitted_when_none(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     list_documents()
     assert "page" not in patch_get_client.documents.list.call_args.kwargs
 
@@ -634,7 +645,7 @@ def test_upload_document_omits_custom_fields_when_none(patch_get_client: MagicMo
 
 
 def test_list_documents_passes_added_from_and_until(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     list_documents(added_from="2024-01-01T00:00:00Z", added_until="2024-12-31T23:59:59Z")
     call_kwargs = patch_get_client.documents.list.call_args.kwargs
     assert call_kwargs["added_from"] == "2024-01-01T00:00:00Z"
@@ -642,7 +653,7 @@ def test_list_documents_passes_added_from_and_until(patch_get_client: MagicMock)
 
 
 def test_list_documents_passes_modified_from_and_until(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     list_documents(modified_from="2024-06-01T00:00:00Z", modified_until="2024-06-30T23:59:59Z")
     call_kwargs = patch_get_client.documents.list.call_args.kwargs
     assert call_kwargs["modified_from"] == "2024-06-01T00:00:00Z"
@@ -650,7 +661,7 @@ def test_list_documents_passes_modified_from_and_until(patch_get_client: MagicMo
 
 
 def test_list_documents_omits_inclusive_date_bounds_when_none(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     list_documents()
     call_kwargs = patch_get_client.documents.list.call_args.kwargs
     assert "added_from" not in call_kwargs

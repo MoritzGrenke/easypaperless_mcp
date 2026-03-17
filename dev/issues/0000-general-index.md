@@ -1,6 +1,6 @@
 # Feature Index
 
-**Next Available ID:** 0014
+**Next Available ID:** 0015
 
 | ID | Type | Name | Status | File |
 |----|------|------|--------|------|
@@ -17,3 +17,4 @@
 | 0011 | feature | Document notes sub-server with full resource tool coverage | QA PASSED | [0011-feature-document_notes_subserver_and_tools.md](0011-feature-document_notes_subserver_and_tools.md) |
 | 0012 | feature | Storage paths sub-server with full resource tool coverage | QA PASSED | [0012-feature-storage_paths_subserver_and_tools.md](0012-feature-storage_paths_subserver_and_tools.md) |
 | 0013 | maintenance | Migrate easypaperless_mcp to easypaperless 0.3.0 | QA PASSED | [0013-maintenance-migrate_to_easypaperless_0_3_0.md](0013-maintenance-migrate_to_easypaperless_0_3_0.md) |
+| 0014 | feature | Expose total count in list tool responses | QA PASSED | [0014-feature-list_tools_return_total_count.md](0014-feature-list_tools_return_total_count.md) |

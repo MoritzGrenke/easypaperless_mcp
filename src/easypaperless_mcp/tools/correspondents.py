@@ -6,6 +6,7 @@ from easypaperless import UNSET, Correspondent, MatchingAlgorithm, SetPermission
 from fastmcp import FastMCP
 
 from ..client import get_client
+from .models import ListResult
 
 # Typed alias so mypy accepts UNSET as a default for any optional param type.
 _UNSET: Any = UNSET
@@ -22,7 +23,7 @@ def list_correspondents(
     page_size: int | None = None,
     ordering: str | None = None,
     descending: bool = False,
-) -> list[Correspondent]:
+) -> ListResult[Correspondent]:
     """List correspondents defined in paperless-ngx with optional filtering.
 
     Args:
@@ -35,7 +36,8 @@ def list_correspondents(
         descending: Reverse the ordering direction. Default: False.
 
     Returns:
-        List of Correspondent objects.
+        ListResult with count (total matching correspondents in paperless-ngx)
+        and items (list of Correspondent objects).
     """
     client = get_client()
     kwargs: dict[str, Any] = {}
@@ -52,7 +54,8 @@ def list_correspondents(
     if ordering is not None:
         kwargs["ordering"] = ordering
     kwargs["descending"] = descending
-    return client.correspondents.list(**kwargs).results
+    paged = client.correspondents.list(**kwargs)
+    return ListResult(count=paged.count, items=paged.results)
 
 
 @correspondents.tool

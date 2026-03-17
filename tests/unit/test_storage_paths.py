@@ -50,57 +50,60 @@ def make_storage_path(**kwargs: Any) -> StoragePath:
 
 
 def test_list_storage_paths_calls_client(patch_get_client: MagicMock) -> None:
-    patch_get_client.storage_paths.list.return_value = MagicMock(results=[make_storage_path(id=1), make_storage_path(id=2)])
+    patch_get_client.storage_paths.list.return_value = MagicMock(count=2, results=[make_storage_path(id=1), make_storage_path(id=2)])
     result = list_storage_paths()
     patch_get_client.storage_paths.list.assert_called_once()
-    assert len(result) == 2
+    assert result.count == 2
+    assert len(result.items) == 2
 
 
 def test_list_storage_paths_returns_empty_list(patch_get_client: MagicMock) -> None:
-    patch_get_client.storage_paths.list.return_value = MagicMock(results=[])
-    assert list_storage_paths() == []
+    patch_get_client.storage_paths.list.return_value = MagicMock(count=0, results=[])
+    result = list_storage_paths()
+    assert result.count == 0
+    assert result.items == []
 
 
 def test_list_storage_paths_returns_storage_path_objects(patch_get_client: MagicMock) -> None:
-    patch_get_client.storage_paths.list.return_value = MagicMock(results=[make_storage_path(id=5, name="Archive")])
+    patch_get_client.storage_paths.list.return_value = MagicMock(count=1, results=[make_storage_path(id=5, name="Archive")])
     result = list_storage_paths()
-    assert isinstance(result[0], StoragePath)
-    assert result[0].id == 5
-    assert result[0].name == "Archive"
+    assert isinstance(result.items[0], StoragePath)
+    assert result.items[0].id == 5
+    assert result.items[0].name == "Archive"
 
 
 def test_list_storage_paths_passes_ids(patch_get_client: MagicMock) -> None:
-    patch_get_client.storage_paths.list.return_value = MagicMock(results=[])
+    patch_get_client.storage_paths.list.return_value = MagicMock(count=0, results=[])
     list_storage_paths(ids=[1, 2, 3])
     assert patch_get_client.storage_paths.list.call_args.kwargs["ids"] == [1, 2, 3]
 
 
 def test_list_storage_paths_passes_name_contains(patch_get_client: MagicMock) -> None:
-    patch_get_client.storage_paths.list.return_value = MagicMock(results=[])
+    patch_get_client.storage_paths.list.return_value = MagicMock(count=0, results=[])
     list_storage_paths(name_contains="archive")
     assert patch_get_client.storage_paths.list.call_args.kwargs["name_contains"] == "archive"
 
 
 def test_list_storage_paths_passes_name_exact(patch_get_client: MagicMock) -> None:
-    patch_get_client.storage_paths.list.return_value = MagicMock(results=[])
+    patch_get_client.storage_paths.list.return_value = MagicMock(count=0, results=[])
     list_storage_paths(name_exact="Archive")
     assert patch_get_client.storage_paths.list.call_args.kwargs["name_exact"] == "Archive"
 
 
 def test_list_storage_paths_passes_path_contains(patch_get_client: MagicMock) -> None:
-    patch_get_client.storage_paths.list.return_value = MagicMock(results=[])
+    patch_get_client.storage_paths.list.return_value = MagicMock(count=0, results=[])
     list_storage_paths(path_contains="{correspondent}")
     assert patch_get_client.storage_paths.list.call_args.kwargs["path_contains"] == "{correspondent}"
 
 
 def test_list_storage_paths_passes_path_exact(patch_get_client: MagicMock) -> None:
-    patch_get_client.storage_paths.list.return_value = MagicMock(results=[])
+    patch_get_client.storage_paths.list.return_value = MagicMock(count=0, results=[])
     list_storage_paths(path_exact="{correspondent}/{title}")
     assert patch_get_client.storage_paths.list.call_args.kwargs["path_exact"] == "{correspondent}/{title}"
 
 
 def test_list_storage_paths_passes_pagination_params(patch_get_client: MagicMock) -> None:
-    patch_get_client.storage_paths.list.return_value = MagicMock(results=[])
+    patch_get_client.storage_paths.list.return_value = MagicMock(count=0, results=[])
     list_storage_paths(page=2, page_size=50, ordering="name", descending=True)
     call_kwargs = patch_get_client.storage_paths.list.call_args.kwargs
     assert call_kwargs["page"] == 2
@@ -110,7 +113,7 @@ def test_list_storage_paths_passes_pagination_params(patch_get_client: MagicMock
 
 
 def test_list_storage_paths_omits_none_optional_params(patch_get_client: MagicMock) -> None:
-    patch_get_client.storage_paths.list.return_value = MagicMock(results=[])
+    patch_get_client.storage_paths.list.return_value = MagicMock(count=0, results=[])
     list_storage_paths()
     call_kwargs = patch_get_client.storage_paths.list.call_args.kwargs
     assert "ids" not in call_kwargs
@@ -124,7 +127,7 @@ def test_list_storage_paths_omits_none_optional_params(patch_get_client: MagicMo
 
 
 def test_list_storage_paths_descending_default_is_false(patch_get_client: MagicMock) -> None:
-    patch_get_client.storage_paths.list.return_value = MagicMock(results=[])
+    patch_get_client.storage_paths.list.return_value = MagicMock(count=0, results=[])
     list_storage_paths()
     assert patch_get_client.storage_paths.list.call_args.kwargs["descending"] is False
 

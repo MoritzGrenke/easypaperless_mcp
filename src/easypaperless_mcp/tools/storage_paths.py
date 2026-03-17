@@ -6,6 +6,7 @@ from easypaperless import UNSET, MatchingAlgorithm, SetPermissions, StoragePath
 from fastmcp import FastMCP
 
 from ..client import get_client
+from .models import ListResult
 
 # Typed alias so mypy accepts UNSET as a default for any optional param type.
 _UNSET: Any = UNSET
@@ -24,7 +25,7 @@ def list_storage_paths(
     page_size: int | None = None,
     ordering: str | None = None,
     descending: bool = False,
-) -> list[StoragePath]:
+) -> ListResult[StoragePath]:
     """List storage paths defined in paperless-ngx with optional filtering.
 
     Args:
@@ -39,7 +40,8 @@ def list_storage_paths(
         descending: Reverse the ordering direction. Default: False.
 
     Returns:
-        List of StoragePath objects.
+        ListResult with count (total matching storage paths in paperless-ngx)
+        and items (list of StoragePath objects).
     """
     client = get_client()
     kwargs: dict[str, Any] = {}
@@ -60,7 +62,8 @@ def list_storage_paths(
     if ordering is not None:
         kwargs["ordering"] = ordering
     kwargs["descending"] = descending
-    return client.storage_paths.list(**kwargs).results
+    paged = client.storage_paths.list(**kwargs)
+    return ListResult(count=paged.count, items=paged.results)
 
 
 @storage_paths.tool

@@ -49,31 +49,34 @@ def make_custom_field(**kwargs: Any) -> CustomField:
 
 
 def test_list_custom_fields_calls_client(patch_get_client: MagicMock) -> None:
-    patch_get_client.custom_fields.list.return_value = MagicMock(results=[make_custom_field(id=1), make_custom_field(id=2)])
+    patch_get_client.custom_fields.list.return_value = MagicMock(count=2, results=[make_custom_field(id=1), make_custom_field(id=2)])
     result = list_custom_fields()
     patch_get_client.custom_fields.list.assert_called_once()
-    assert len(result) == 2
+    assert result.count == 2
+    assert len(result.items) == 2
 
 
 def test_list_custom_fields_returns_empty_list(patch_get_client: MagicMock) -> None:
-    patch_get_client.custom_fields.list.return_value = MagicMock(results=[])
-    assert list_custom_fields() == []
+    patch_get_client.custom_fields.list.return_value = MagicMock(count=0, results=[])
+    result = list_custom_fields()
+    assert result.count == 0
+    assert result.items == []
 
 
 def test_list_custom_fields_passes_name_contains(patch_get_client: MagicMock) -> None:
-    patch_get_client.custom_fields.list.return_value = MagicMock(results=[])
+    patch_get_client.custom_fields.list.return_value = MagicMock(count=0, results=[])
     list_custom_fields(name_contains="invoice")
     assert patch_get_client.custom_fields.list.call_args.kwargs["name_contains"] == "invoice"
 
 
 def test_list_custom_fields_passes_name_exact(patch_get_client: MagicMock) -> None:
-    patch_get_client.custom_fields.list.return_value = MagicMock(results=[])
+    patch_get_client.custom_fields.list.return_value = MagicMock(count=0, results=[])
     list_custom_fields(name_exact="Invoice Amount")
     assert patch_get_client.custom_fields.list.call_args.kwargs["name_exact"] == "Invoice Amount"
 
 
 def test_list_custom_fields_passes_pagination_params(patch_get_client: MagicMock) -> None:
-    patch_get_client.custom_fields.list.return_value = MagicMock(results=[])
+    patch_get_client.custom_fields.list.return_value = MagicMock(count=0, results=[])
     list_custom_fields(page=2, page_size=50, ordering="name", descending=True)
     call_kwargs = patch_get_client.custom_fields.list.call_args.kwargs
     assert call_kwargs["page"] == 2
@@ -83,7 +86,7 @@ def test_list_custom_fields_passes_pagination_params(patch_get_client: MagicMock
 
 
 def test_list_custom_fields_omits_none_optional_params(patch_get_client: MagicMock) -> None:
-    patch_get_client.custom_fields.list.return_value = MagicMock(results=[])
+    patch_get_client.custom_fields.list.return_value = MagicMock(count=0, results=[])
     list_custom_fields()
     call_kwargs = patch_get_client.custom_fields.list.call_args.kwargs
     assert "name_contains" not in call_kwargs
@@ -101,11 +104,11 @@ def test_list_custom_fields_has_no_ids_param(patch_get_client: MagicMock) -> Non
 
 
 def test_list_custom_fields_returns_custom_field_objects(patch_get_client: MagicMock) -> None:
-    patch_get_client.custom_fields.list.return_value = MagicMock(results=[make_custom_field(id=5, name="Amount")])
+    patch_get_client.custom_fields.list.return_value = MagicMock(count=1, results=[make_custom_field(id=5, name="Amount")])
     result = list_custom_fields()
-    assert isinstance(result[0], CustomField)
-    assert result[0].id == 5
-    assert result[0].name == "Amount"
+    assert isinstance(result.items[0], CustomField)
+    assert result.items[0].id == 5
+    assert result.items[0].name == "Amount"
 
 
 # ---------------------------------------------------------------------------

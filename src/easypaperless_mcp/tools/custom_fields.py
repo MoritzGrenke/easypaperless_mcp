@@ -6,6 +6,7 @@ from easypaperless import UNSET, CustomField, SetPermissions
 from fastmcp import FastMCP
 
 from ..client import get_client
+from .models import ListResult
 
 # Typed alias so mypy accepts UNSET as a default for any optional param type.
 _UNSET: Any = UNSET
@@ -21,7 +22,7 @@ def list_custom_fields(
     page_size: int | None = None,
     ordering: str | None = None,
     descending: bool = False,
-) -> list[CustomField]:
+) -> ListResult[CustomField]:
     """List custom fields defined in paperless-ngx with optional filtering.
 
     Args:
@@ -33,7 +34,8 @@ def list_custom_fields(
         descending: Reverse the ordering direction. Default: False.
 
     Returns:
-        List of CustomField objects.
+        ListResult with count (total matching custom fields in paperless-ngx)
+        and items (list of CustomField objects).
     """
     client = get_client()
     kwargs: dict[str, Any] = {}
@@ -48,7 +50,8 @@ def list_custom_fields(
     if ordering is not None:
         kwargs["ordering"] = ordering
     kwargs["descending"] = descending
-    return client.custom_fields.list(**kwargs).results
+    paged = client.custom_fields.list(**kwargs)
+    return ListResult(count=paged.count, items=paged.results)
 
 
 @custom_fields.tool
