@@ -24,3 +24,21 @@ This is a data issue from paperless-ngx itself — the dates stored there have n
 
 
 include_metadata missing in some tool? was it update_document?
+
+
+delete_document_note in document resource? check
+
+claude uses the bulk_* tools even if it is only one document two work on. not completely wrong.
+
+help needed for difficult parameters with a certain structure. e.g. custom field queries?!
+
+l3 archive: no search_hit field? claude says this depends on the Whoosh config!?
+
+
+## 17.03.
+remarks: mcp: ordering param: add possible fields to the description.
+bulk_set_permissions() merge param desc!?
+custom_fields.create(): extra_data desc?!
+storage_paths.create(): path desc?!
+
+sorting: make a docstring remark not to use the - prefix, but to using descending=True param. 

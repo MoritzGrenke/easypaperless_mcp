@@ -42,7 +42,7 @@ def list_storage_paths(
         List of StoragePath objects.
     """
     client = get_client()
-    kwargs: dict = {}
+    kwargs: dict[str, Any] = {}
     if ids is not None:
         kwargs["ids"] = ids
     if name_contains is not None:
@@ -60,7 +60,7 @@ def list_storage_paths(
     if ordering is not None:
         kwargs["ordering"] = ordering
     kwargs["descending"] = descending
-    return client.storage_paths.list(**kwargs)
+    return client.storage_paths.list(**kwargs).results
 
 
 @storage_paths.tool
@@ -103,7 +103,7 @@ def create_storage_path(
         The created StoragePath.
     """
     client = get_client()
-    kwargs: dict = {
+    kwargs: dict[str, Any] = {
         "name": name,
         "path": path,
         "is_insensitive": is_insensitive,
@@ -156,19 +156,19 @@ def update_storage_path(
     """
     client = get_client()
     kwargs: dict[str, Any] = {}
-    if name is not UNSET:
+    if name is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["name"] = name
-    if path is not UNSET:
+    if path is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["path"] = path
-    if match is not UNSET:
+    if match is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["match"] = match
-    if matching_algorithm is not UNSET:
+    if matching_algorithm is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["matching_algorithm"] = matching_algorithm
-    if is_insensitive is not UNSET:
+    if is_insensitive is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["is_insensitive"] = is_insensitive
-    if owner is not UNSET:
+    if owner is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["owner"] = owner
-    if set_permissions is not UNSET:
+    if set_permissions is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["set_permissions"] = set_permissions
     return client.storage_paths.update(id, **kwargs)
 
@@ -218,4 +218,4 @@ def bulk_set_storage_path_permissions(
             Default: False (replace).
     """
     client = get_client()
-    client.storage_paths.bulk_set_permissions(ids, set_permissions=set_permissions, owner=owner, merge=merge)
+    client.storage_paths.bulk_set_permissions(ids, set_permissions=set_permissions, owner=owner, merge=merge)  # type: ignore[arg-type]

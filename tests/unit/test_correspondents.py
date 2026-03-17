@@ -50,37 +50,37 @@ def make_correspondent(**kwargs: Any) -> Correspondent:
 
 
 def test_list_correspondents_calls_client(patch_get_client: MagicMock) -> None:
-    patch_get_client.correspondents.list.return_value = [make_correspondent(id=1), make_correspondent(id=2)]
+    patch_get_client.correspondents.list.return_value = MagicMock(results=[make_correspondent(id=1), make_correspondent(id=2)])
     result = list_correspondents()
     patch_get_client.correspondents.list.assert_called_once()
     assert len(result) == 2
 
 
 def test_list_correspondents_returns_empty_list(patch_get_client: MagicMock) -> None:
-    patch_get_client.correspondents.list.return_value = []
+    patch_get_client.correspondents.list.return_value = MagicMock(results=[])
     assert list_correspondents() == []
 
 
 def test_list_correspondents_passes_ids(patch_get_client: MagicMock) -> None:
-    patch_get_client.correspondents.list.return_value = []
+    patch_get_client.correspondents.list.return_value = MagicMock(results=[])
     list_correspondents(ids=[1, 2, 3])
     assert patch_get_client.correspondents.list.call_args.kwargs["ids"] == [1, 2, 3]
 
 
 def test_list_correspondents_passes_name_contains(patch_get_client: MagicMock) -> None:
-    patch_get_client.correspondents.list.return_value = []
+    patch_get_client.correspondents.list.return_value = MagicMock(results=[])
     list_correspondents(name_contains="acme")
     assert patch_get_client.correspondents.list.call_args.kwargs["name_contains"] == "acme"
 
 
 def test_list_correspondents_passes_name_exact(patch_get_client: MagicMock) -> None:
-    patch_get_client.correspondents.list.return_value = []
+    patch_get_client.correspondents.list.return_value = MagicMock(results=[])
     list_correspondents(name_exact="ACME Corp")
     assert patch_get_client.correspondents.list.call_args.kwargs["name_exact"] == "ACME Corp"
 
 
 def test_list_correspondents_passes_pagination_params(patch_get_client: MagicMock) -> None:
-    patch_get_client.correspondents.list.return_value = []
+    patch_get_client.correspondents.list.return_value = MagicMock(results=[])
     list_correspondents(page=2, page_size=50, ordering="name", descending=True)
     call_kwargs = patch_get_client.correspondents.list.call_args.kwargs
     assert call_kwargs["page"] == 2
@@ -90,7 +90,7 @@ def test_list_correspondents_passes_pagination_params(patch_get_client: MagicMoc
 
 
 def test_list_correspondents_omits_none_optional_params(patch_get_client: MagicMock) -> None:
-    patch_get_client.correspondents.list.return_value = []
+    patch_get_client.correspondents.list.return_value = MagicMock(results=[])
     list_correspondents()
     call_kwargs = patch_get_client.correspondents.list.call_args.kwargs
     assert "ids" not in call_kwargs
@@ -101,7 +101,7 @@ def test_list_correspondents_omits_none_optional_params(patch_get_client: MagicM
 
 
 def test_list_correspondents_returns_correspondent_objects(patch_get_client: MagicMock) -> None:
-    patch_get_client.correspondents.list.return_value = [make_correspondent(id=5, name="Bank")]
+    patch_get_client.correspondents.list.return_value = MagicMock(results=[make_correspondent(id=5, name="Bank")])
     result = list_correspondents()
     assert isinstance(result[0], Correspondent)
     assert result[0].id == 5

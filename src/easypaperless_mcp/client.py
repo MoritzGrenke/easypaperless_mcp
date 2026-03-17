@@ -27,5 +27,5 @@ def get_client() -> SyncPaperlessClient:
             raise RuntimeError(
                 "PAPERLESS_URL and PAPERLESS_TOKEN environment variables must be set"
             )
-        _client = SyncPaperlessClient(url=url, api_key=token)
+        _client = SyncPaperlessClient(url=url, api_token=token)
     return _client

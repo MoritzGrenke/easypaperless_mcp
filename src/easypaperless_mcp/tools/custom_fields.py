@@ -36,7 +36,7 @@ def list_custom_fields(
         List of CustomField objects.
     """
     client = get_client()
-    kwargs: dict = {}
+    kwargs: dict[str, Any] = {}
     if name_contains is not None:
         kwargs["name_contains"] = name_contains
     if name_exact is not None:
@@ -48,7 +48,7 @@ def list_custom_fields(
     if ordering is not None:
         kwargs["ordering"] = ordering
     kwargs["descending"] = descending
-    return client.custom_fields.list(**kwargs)
+    return client.custom_fields.list(**kwargs).results
 
 
 @custom_fields.tool
@@ -69,7 +69,7 @@ def get_custom_field(id: int) -> CustomField:
 def create_custom_field(
     name: str,
     data_type: str,
-    extra_data: dict | None = None,
+    extra_data: dict[str, Any] | None = None,
     owner: int | None = None,
     set_permissions: SetPermissions | None = None,
 ) -> CustomField:
@@ -88,7 +88,7 @@ def create_custom_field(
         The created CustomField.
     """
     client = get_client()
-    kwargs: dict = {
+    kwargs: dict[str, Any] = {
         "name": name,
         "data_type": data_type,
     }
@@ -106,7 +106,9 @@ def update_custom_field(
     id: int,
     name: str | None = _UNSET,
     data_type: str | None = _UNSET,
-    extra_data: dict | None = _UNSET,
+    extra_data: dict[str, Any] | None = _UNSET,
+    owner: int | None = _UNSET,
+    set_permissions: SetPermissions | None = _UNSET,
 ) -> CustomField:
     """Partially update a custom field (PATCH semantics).
 
@@ -120,18 +122,26 @@ def update_custom_field(
             monetary, date, url, documentlink, select. Omit to leave unchanged.
         extra_data: Additional configuration data. Omit to leave unchanged,
             or None to clear.
+        owner: Numeric user ID to assign as custom field owner. Omit to leave
+            unchanged, or None to clear.
+        set_permissions: Explicit view/change permission sets. Omit to leave
+            unchanged, or None to clear.
 
     Returns:
         The updated CustomField.
     """
     client = get_client()
     kwargs: dict[str, Any] = {}
-    if name is not UNSET:
+    if name is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["name"] = name
-    if data_type is not UNSET:
+    if data_type is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["data_type"] = data_type
-    if extra_data is not UNSET:
+    if extra_data is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["extra_data"] = extra_data
+    if owner is not UNSET:  # type: ignore[comparison-overlap]
+        kwargs["owner"] = owner
+    if set_permissions is not UNSET:  # type: ignore[comparison-overlap]
+        kwargs["set_permissions"] = set_permissions
     return client.custom_fields.update(id, **kwargs)
 
 

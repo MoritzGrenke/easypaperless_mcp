@@ -50,37 +50,37 @@ def make_document_type(**kwargs: Any) -> DocumentType:
 
 
 def test_list_document_types_calls_client(patch_get_client: MagicMock) -> None:
-    patch_get_client.document_types.list.return_value = [make_document_type(id=1), make_document_type(id=2)]
+    patch_get_client.document_types.list.return_value = MagicMock(results=[make_document_type(id=1), make_document_type(id=2)])
     result = list_document_types()
     patch_get_client.document_types.list.assert_called_once()
     assert len(result) == 2
 
 
 def test_list_document_types_returns_empty_list(patch_get_client: MagicMock) -> None:
-    patch_get_client.document_types.list.return_value = []
+    patch_get_client.document_types.list.return_value = MagicMock(results=[])
     assert list_document_types() == []
 
 
 def test_list_document_types_passes_ids(patch_get_client: MagicMock) -> None:
-    patch_get_client.document_types.list.return_value = []
+    patch_get_client.document_types.list.return_value = MagicMock(results=[])
     list_document_types(ids=[1, 2, 3])
     assert patch_get_client.document_types.list.call_args.kwargs["ids"] == [1, 2, 3]
 
 
 def test_list_document_types_passes_name_contains(patch_get_client: MagicMock) -> None:
-    patch_get_client.document_types.list.return_value = []
+    patch_get_client.document_types.list.return_value = MagicMock(results=[])
     list_document_types(name_contains="invoice")
     assert patch_get_client.document_types.list.call_args.kwargs["name_contains"] == "invoice"
 
 
 def test_list_document_types_passes_name_exact(patch_get_client: MagicMock) -> None:
-    patch_get_client.document_types.list.return_value = []
+    patch_get_client.document_types.list.return_value = MagicMock(results=[])
     list_document_types(name_exact="Invoice")
     assert patch_get_client.document_types.list.call_args.kwargs["name_exact"] == "Invoice"
 
 
 def test_list_document_types_passes_pagination_params(patch_get_client: MagicMock) -> None:
-    patch_get_client.document_types.list.return_value = []
+    patch_get_client.document_types.list.return_value = MagicMock(results=[])
     list_document_types(page=2, page_size=50, ordering="name", descending=True)
     call_kwargs = patch_get_client.document_types.list.call_args.kwargs
     assert call_kwargs["page"] == 2
@@ -90,7 +90,7 @@ def test_list_document_types_passes_pagination_params(patch_get_client: MagicMoc
 
 
 def test_list_document_types_omits_none_optional_params(patch_get_client: MagicMock) -> None:
-    patch_get_client.document_types.list.return_value = []
+    patch_get_client.document_types.list.return_value = MagicMock(results=[])
     list_document_types()
     call_kwargs = patch_get_client.document_types.list.call_args.kwargs
     assert "ids" not in call_kwargs
@@ -102,13 +102,13 @@ def test_list_document_types_omits_none_optional_params(patch_get_client: MagicM
 
 
 def test_list_document_types_descending_default_is_false(patch_get_client: MagicMock) -> None:
-    patch_get_client.document_types.list.return_value = []
+    patch_get_client.document_types.list.return_value = MagicMock(results=[])
     list_document_types()
     assert patch_get_client.document_types.list.call_args.kwargs["descending"] is False
 
 
 def test_list_document_types_returns_document_type_objects(patch_get_client: MagicMock) -> None:
-    patch_get_client.document_types.list.return_value = [make_document_type(id=5, name="Contract")]
+    patch_get_client.document_types.list.return_value = MagicMock(results=[make_document_type(id=5, name="Contract")])
     result = list_document_types()
     assert isinstance(result[0], DocumentType)
     assert result[0].id == 5

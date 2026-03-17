@@ -4,7 +4,7 @@ from typing import Any
 
 from easypaperless import UNSET, Document, DocumentMetadata, DocumentNote, SetPermissions
 from fastmcp import FastMCP
-from pydantic.fields import PydanticUndefined
+from pydantic.fields import PydanticUndefined  # type: ignore[attr-defined]
 
 from ..client import get_client
 
@@ -61,7 +61,7 @@ def _filter_fields(doc: Document, return_fields: list[str]) -> Document:
             continue
         field_info = doc.__class__.model_fields[f]
         if field_info.default_factory is not None:
-            to_update[f] = field_info.default_factory()
+            to_update[f] = field_info.default_factory()  # type: ignore[call-arg]
         elif field_info.default is not PydanticUndefined:
             to_update[f] = field_info.default
         else:
@@ -278,7 +278,7 @@ def list_documents(
         kwargs["ordering"] = ordering
     if page is not None:
         kwargs["page"] = page
-    docs = client.documents.list(**kwargs)
+    docs = client.documents.list(**kwargs).results
     return [_filter_fields(doc, return_fields) for doc in docs]
 
 
@@ -381,25 +381,25 @@ def update_document(
     if created is not None:
         kwargs["created"] = created
 
-    if correspondent is not UNSET:
+    if correspondent is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["correspondent"] = correspondent
 
-    if document_type is not UNSET:
+    if document_type is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["document_type"] = document_type
 
-    if storage_path is not UNSET:
+    if storage_path is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["storage_path"] = storage_path
 
     if tags is not None:
         kwargs["tags"] = tags
 
-    if archive_serial_number is not UNSET:
+    if archive_serial_number is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["archive_serial_number"] = archive_serial_number
 
     if custom_fields is not None:
         kwargs["custom_fields"] = custom_fields
 
-    if owner is not UNSET:
+    if owner is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["owner"] = owner
 
     if set_permissions is not None:
@@ -621,7 +621,7 @@ def bulk_set_permissions(
     """
     client = get_client()
     client.documents.bulk_set_permissions(
-        ids, set_permissions=set_permissions, owner=owner, merge=merge
+        ids, set_permissions=set_permissions, owner=owner, merge=merge  # type: ignore[arg-type]
     )
 
 

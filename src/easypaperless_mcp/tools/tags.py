@@ -38,7 +38,7 @@ def list_tags(
         List of Tag objects.
     """
     client = get_client()
-    kwargs: dict = {}
+    kwargs: dict[str, Any] = {}
     if ids is not None:
         kwargs["ids"] = ids
     if name_contains is not None:
@@ -52,7 +52,7 @@ def list_tags(
     if ordering is not None:
         kwargs["ordering"] = ordering
     kwargs["descending"] = descending
-    return client.tags.list(**kwargs)
+    return client.tags.list(**kwargs).results
 
 
 @tags.tool
@@ -99,7 +99,7 @@ def create_tag(
         The created Tag.
     """
     client = get_client()
-    kwargs: dict = {
+    kwargs: dict[str, Any] = {
         "name": name,
         "is_insensitive": is_insensitive,
     }
@@ -164,23 +164,23 @@ def update_tag(
     """
     client = get_client()
     kwargs: dict[str, Any] = {}
-    if name is not UNSET:
+    if name is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["name"] = name
-    if color is not UNSET:
+    if color is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["color"] = color
-    if is_inbox_tag is not UNSET:
+    if is_inbox_tag is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["is_inbox_tag"] = is_inbox_tag
-    if match is not UNSET:
+    if match is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["match"] = match
-    if matching_algorithm is not UNSET:
+    if matching_algorithm is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["matching_algorithm"] = matching_algorithm
-    if is_insensitive is not UNSET:
+    if is_insensitive is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["is_insensitive"] = is_insensitive
-    if parent is not UNSET:
+    if parent is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["parent"] = parent
-    if owner is not UNSET:
+    if owner is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["owner"] = owner
-    if set_permissions is not UNSET:
+    if set_permissions is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["set_permissions"] = set_permissions
     return client.tags.update(id, **kwargs)
 
@@ -229,4 +229,4 @@ def bulk_set_tag_permissions(
             Default: False (replace).
     """
     client = get_client()
-    client.tags.bulk_set_permissions(ids, set_permissions=set_permissions, owner=owner, merge=merge)
+    client.tags.bulk_set_permissions(ids, set_permissions=set_permissions, owner=owner, merge=merge)  # type: ignore[arg-type]

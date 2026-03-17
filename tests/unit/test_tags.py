@@ -50,37 +50,37 @@ def make_tag(**kwargs: Any) -> Tag:
 
 
 def test_list_tags_calls_client(patch_get_client: MagicMock) -> None:
-    patch_get_client.tags.list.return_value = [make_tag(id=1), make_tag(id=2)]
+    patch_get_client.tags.list.return_value = MagicMock(results=[make_tag(id=1), make_tag(id=2)])
     result = list_tags()
     patch_get_client.tags.list.assert_called_once()
     assert len(result) == 2
 
 
 def test_list_tags_returns_empty_list(patch_get_client: MagicMock) -> None:
-    patch_get_client.tags.list.return_value = []
+    patch_get_client.tags.list.return_value = MagicMock(results=[])
     assert list_tags() == []
 
 
 def test_list_tags_passes_ids(patch_get_client: MagicMock) -> None:
-    patch_get_client.tags.list.return_value = []
+    patch_get_client.tags.list.return_value = MagicMock(results=[])
     list_tags(ids=[1, 2, 3])
     assert patch_get_client.tags.list.call_args.kwargs["ids"] == [1, 2, 3]
 
 
 def test_list_tags_passes_name_contains(patch_get_client: MagicMock) -> None:
-    patch_get_client.tags.list.return_value = []
+    patch_get_client.tags.list.return_value = MagicMock(results=[])
     list_tags(name_contains="invoice")
     assert patch_get_client.tags.list.call_args.kwargs["name_contains"] == "invoice"
 
 
 def test_list_tags_passes_name_exact(patch_get_client: MagicMock) -> None:
-    patch_get_client.tags.list.return_value = []
+    patch_get_client.tags.list.return_value = MagicMock(results=[])
     list_tags(name_exact="Invoice")
     assert patch_get_client.tags.list.call_args.kwargs["name_exact"] == "Invoice"
 
 
 def test_list_tags_passes_pagination_params(patch_get_client: MagicMock) -> None:
-    patch_get_client.tags.list.return_value = []
+    patch_get_client.tags.list.return_value = MagicMock(results=[])
     list_tags(page=2, page_size=50, ordering="name", descending=True)
     call_kwargs = patch_get_client.tags.list.call_args.kwargs
     assert call_kwargs["page"] == 2
@@ -90,7 +90,7 @@ def test_list_tags_passes_pagination_params(patch_get_client: MagicMock) -> None
 
 
 def test_list_tags_omits_none_optional_params(patch_get_client: MagicMock) -> None:
-    patch_get_client.tags.list.return_value = []
+    patch_get_client.tags.list.return_value = MagicMock(results=[])
     list_tags()
     call_kwargs = patch_get_client.tags.list.call_args.kwargs
     assert "ids" not in call_kwargs
@@ -101,7 +101,7 @@ def test_list_tags_omits_none_optional_params(patch_get_client: MagicMock) -> No
 
 
 def test_list_tags_returns_tag_objects(patch_get_client: MagicMock) -> None:
-    patch_get_client.tags.list.return_value = [make_tag(id=5, name="Finance")]
+    patch_get_client.tags.list.return_value = MagicMock(results=[make_tag(id=5, name="Finance")])
     result = list_tags()
     assert isinstance(result[0], Tag)
     assert result[0].id == 5
