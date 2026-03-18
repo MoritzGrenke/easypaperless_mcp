@@ -9,6 +9,7 @@ from easypaperless_mcp.tools.document_notes import (
     list_document_notes,
 )
 from easypaperless_mcp.tools.documents import list_documents
+from easypaperless_mcp.tools.models import ListResult
 
 
 pytestmark = pytest.mark.integration
@@ -24,17 +25,35 @@ def document_id(paperless_client: SyncPaperlessClient) -> int:
     return result.items[0].id
 
 
-def test_list_document_notes_returns_list(paperless_client: SyncPaperlessClient, document_id: int) -> None:
+def test_list_document_notes_returns_list_result(
+    paperless_client: SyncPaperlessClient, document_id: int
+) -> None:
     result = list_document_notes(document_id=document_id)
-    assert isinstance(result, list)
+    assert isinstance(result, ListResult)
+
+
+def test_list_document_notes_returns_count(
+    paperless_client: SyncPaperlessClient, document_id: int
+) -> None:
+    result = list_document_notes(document_id=document_id)
+    assert isinstance(result.count, int)
+    assert result.count >= 0
 
 
 def test_list_document_notes_returns_document_note_objects(
     paperless_client: SyncPaperlessClient, document_id: int
 ) -> None:
     result = list_document_notes(document_id=document_id)
-    for note in result:
+    for note in result.items:
         assert isinstance(note, DocumentNote)
+
+
+def test_list_document_notes_pagination_params_accepted(
+    paperless_client: SyncPaperlessClient, document_id: int
+) -> None:
+    """page and page_size parameters should be accepted without error."""
+    result = list_document_notes(document_id=document_id, page=1, page_size=10)
+    assert isinstance(result, ListResult)
 
 
 def test_create_and_delete_note_round_trip(
@@ -49,11 +68,11 @@ def test_create_and_delete_note_round_trip(
     assert created.id is not None
 
     notes_after_create = list_document_notes(document_id=document_id)
-    note_ids = [n.id for n in notes_after_create]
+    note_ids = [n.id for n in notes_after_create.items]
     assert created.id in note_ids
 
     delete_document_note(document_id=document_id, note_id=created.id)
 
     notes_after_delete = list_document_notes(document_id=document_id)
-    remaining_ids = [n.id for n in notes_after_delete]
+    remaining_ids = [n.id for n in notes_after_delete.items]
     assert created.id not in remaining_ids

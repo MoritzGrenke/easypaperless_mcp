@@ -11,6 +11,7 @@ from easypaperless_mcp.tools.document_notes import (
     delete_document_note,
     list_document_notes,
 )
+from easypaperless_mcp.tools.models import ListResult
 
 
 # ---------------------------------------------------------------------------
@@ -41,35 +42,55 @@ def make_document_note(**kwargs: Any) -> DocumentNote:
     return DocumentNote.model_validate(defaults)
 
 
+def make_paged_result(notes: list[DocumentNote]) -> MagicMock:
+    """Build a minimal PagedResult mock matching easypaperless 0.3.1."""
+    paged: MagicMock = MagicMock()
+    paged.results = notes
+    paged.count = len(notes)
+    return paged
+
+
 # ---------------------------------------------------------------------------
 # list_document_notes
 # ---------------------------------------------------------------------------
 
 
 def test_list_document_notes_calls_client(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.notes.list.return_value = [make_document_note(id=1), make_document_note(id=2)]
+    notes = [make_document_note(id=1), make_document_note(id=2)]
+    patch_get_client.documents.notes.list.return_value = make_paged_result(notes)
     result = list_document_notes(document_id=42)
-    patch_get_client.documents.notes.list.assert_called_once_with(42)
-    assert len(result) == 2
+    patch_get_client.documents.notes.list.assert_called_once_with(42, page=None, page_size=None)
+    assert result.count == 2
+    assert len(result.items) == 2
 
 
 def test_list_document_notes_passes_document_id(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.notes.list.return_value = []
+    patch_get_client.documents.notes.list.return_value = make_paged_result([])
     list_document_notes(document_id=99)
-    patch_get_client.documents.notes.list.assert_called_once_with(99)
+    patch_get_client.documents.notes.list.assert_called_once_with(99, page=None, page_size=None)
 
 
-def test_list_document_notes_returns_empty_list(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.notes.list.return_value = []
-    assert list_document_notes(document_id=1) == []
+def test_list_document_notes_returns_list_result(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.notes.list.return_value = make_paged_result([])
+    result = list_document_notes(document_id=1)
+    assert isinstance(result, ListResult)
+    assert result.count == 0
+    assert result.items == []
 
 
 def test_list_document_notes_returns_document_note_objects(patch_get_client: MagicMock) -> None:
-    patch_get_client.documents.notes.list.return_value = [make_document_note(id=7, note="Hello")]
+    notes = [make_document_note(id=7, note="Hello")]
+    patch_get_client.documents.notes.list.return_value = make_paged_result(notes)
     result = list_document_notes(document_id=42)
-    assert isinstance(result[0], DocumentNote)
-    assert result[0].id == 7
-    assert result[0].note == "Hello"
+    assert isinstance(result.items[0], DocumentNote)
+    assert result.items[0].id == 7
+    assert result.items[0].note == "Hello"
+
+
+def test_list_document_notes_passes_pagination_params(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.notes.list.return_value = make_paged_result([])
+    list_document_notes(document_id=5, page=2, page_size=10)
+    patch_get_client.documents.notes.list.assert_called_once_with(5, page=2, page_size=10)
 
 
 # ---------------------------------------------------------------------------
