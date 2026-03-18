@@ -1,6 +1,6 @@
 """Documents sub-server: MCP tools for the paperless-ngx documents resource."""
 
-from typing import Any
+from typing import Any, get_args, get_origin
 
 from easypaperless import UNSET, Document, DocumentMetadata, DocumentNote, SetPermissions
 from fastmcp import FastMCP
@@ -40,13 +40,37 @@ _GET_RETURN_FIELDS: list[str] = [
 ]
 
 
+_ZERO_VALUES: dict[type, Any] = {int: 0, str: "", bool: False}
+
+
+def _zero_value_for(annotation: Any) -> Any:
+    """Return a type-appropriate zero/empty value for a required field annotation.
+
+    Handles plain types (``int``, ``str``, ``bool``) and union types such as
+    ``int | None`` by inspecting the first non-``None`` arg.  Falls back to
+    ``None`` for any unrecognised annotation.
+    """
+    if annotation in _ZERO_VALUES:
+        return _ZERO_VALUES[annotation]
+    origin = get_origin(annotation)
+    # Union types (e.g. ``int | None``) — pick the first non-None arg
+    if origin is type(None):
+        return None
+    args = get_args(annotation)
+    if args:
+        non_none = [a for a in args if a is not type(None)]
+        if non_none and non_none[0] in _ZERO_VALUES:
+            return _ZERO_VALUES[non_none[0]]
+    return None
+
+
 def _filter_fields(doc: Document, return_fields: list[str]) -> Document:
     """Return a copy of doc with all fields not in return_fields set to their type-appropriate empty value.
 
     Fields are set to their ``default_factory`` result (e.g. ``[]`` for list
-    fields), their ``default`` value, or ``None`` for Optional fields — in that
-    priority order. Required fields with no default are set to ``None`` as a
-    last resort (they should always be included in ``return_fields``).
+    fields), their ``default`` value, or a type-appropriate zero value for
+    required fields (``0`` for ``int``, ``""`` for ``str``, ``False`` for
+    ``bool``).
 
     Args:
         doc: The document to filter.
@@ -66,7 +90,7 @@ def _filter_fields(doc: Document, return_fields: list[str]) -> Document:
         elif field_info.default is not PydanticUndefined:
             to_update[f] = field_info.default
         else:
-            to_update[f] = None
+            to_update[f] = _zero_value_for(field_info.annotation)
     if not to_update:
         return doc
     return doc.model_copy(update=to_update)
@@ -201,6 +225,8 @@ def list_documents(
     """
     if return_fields is None:
         return_fields = _LIST_RETURN_FIELDS
+    if "id" not in return_fields:
+        return_fields = ["id"] + return_fields
     client = get_client()
     kwargs: dict[str, Any] = {"max_results": max_results, "page_size": page_size, "descending": descending}
     if search is not None:
@@ -307,6 +333,8 @@ def get_document(
     """
     if return_fields is None:
         return_fields = _GET_RETURN_FIELDS
+    if "id" not in return_fields:
+        return_fields = ["id"] + return_fields
     client = get_client()
     doc = client.documents.get(id=id, include_metadata=include_metadata)
     return _filter_fields(doc, return_fields)
@@ -636,17 +664,25 @@ def bulk_set_permissions(
 
 
 @documents.tool
-def list_document_notes(id: int) -> list[DocumentNote]:
+def list_document_notes(
+    id: int,
+    page: int | None = None,
+    page_size: int | None = None,
+) -> ListResult[DocumentNote]:
     """List all notes attached to a document.
 
     Args:
         id: Numeric ID of the document whose notes to retrieve.
+        page: Page number to retrieve (1-based). Omit to retrieve the first page.
+        page_size: Number of notes per page. Omit to use the server default.
 
     Returns:
-        List of DocumentNote objects ordered by creation time.
+        ListResult with count (total notes for this document in paperless-ngx)
+        and items (notes on the requested page).
     """
     client = get_client()
-    return client.documents.notes.list(id)
+    paged = client.documents.notes.list(id, page=page, page_size=page_size)
+    return ListResult(count=paged.count, items=paged.results)
 
 
 @documents.tool

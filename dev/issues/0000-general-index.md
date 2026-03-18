@@ -1,6 +1,6 @@
 # Feature Index
 
-**Next Available ID:** 0016
+**Next Available ID:** 0018
 
 | ID | Type | Name | Status | File |
 |----|------|------|--------|------|
@@ -18,4 +18,6 @@
 | 0012 | feature | Storage paths sub-server with full resource tool coverage | QA PASSED | [0012-feature-storage_paths_subserver_and_tools.md](0012-feature-storage_paths_subserver_and_tools.md) |
 | 0013 | maintenance | Migrate easypaperless_mcp to easypaperless 0.3.0 | QA PASSED | [0013-maintenance-migrate_to_easypaperless_0_3_0.md](0013-maintenance-migrate_to_easypaperless_0_3_0.md) |
 | 0014 | feature | Expose total count in list tool responses | QA PASSED | [0014-feature-list_tools_return_total_count.md](0014-feature-list_tools_return_total_count.md) |
-| 0015 | bug | `list_correspondents` fails with plain HTTP request on HTTPS instances | External | [0015-bug-https_url_sends_plain_http.md](0015-bug-https_url_sends_plain_http.md) |
+| 0015 | bug | `list_correspondents` fails with plain HTTP request on HTTPS instances | RESOLVED | [0015-bug-https_url_sends_plain_http.md](0015-bug-https_url_sends_plain_http.md) |
+| 0016 | maintenance | Migrate easypaperless_mcp to easypaperless 0.3.1 | OPEN | [0016-maintenance-migrate_to_easypaperless_0_3_1.md](0016-maintenance-migrate_to_easypaperless_0_3_1.md) |
+| 0017 | bug | `_filter_fields` sets required non-nullable fields to `None` when omitted from `return_fields` | QA PASSED | [0017-bug-filter_fields_fails_for_required_fields.md](0017-bug-filter_fields_fails_for_required_fields.md) |

@@ -64,6 +64,20 @@ def test_filter_fields_list_fields_use_empty_list_not_none() -> None:
     assert result.custom_fields == []
 
 
+def test_filter_fields_required_int_field_uses_zero() -> None:
+    """Regression: omitting id from return_fields must yield 0, not raise a validation error."""
+    doc = make_document(id=99, title="Test")
+    result = _filter_fields(doc, ["title"])
+    assert result.id == 0
+
+
+def test_filter_fields_required_str_field_uses_empty_string() -> None:
+    """Regression: omitting title from return_fields must yield '', not raise a validation error."""
+    doc = make_document(id=1, title="Something")
+    result = _filter_fields(doc, ["id"])
+    assert result.title == ""
+
+
 # ---------------------------------------------------------------------------
 # list_documents
 # ---------------------------------------------------------------------------
@@ -178,6 +192,28 @@ def test_list_documents_omits_none_filters(patch_get_client: MagicMock) -> None:
     call_kwargs = patch_get_client.documents.list.call_args.kwargs
     assert "search" not in call_kwargs
     assert "tags" not in call_kwargs
+
+
+def test_list_documents_always_includes_id_even_when_omitted(patch_get_client: MagicMock) -> None:
+    """Regression: id must be in the result even when caller omits it from return_fields."""
+    patch_get_client.documents.list.return_value = MagicMock(
+        count=1, results=[make_document(id=7, title="Doc")]
+    )
+    result = list_documents(return_fields=["created", "tags"])
+    assert result.items[0].id == 7
+
+
+def test_list_documents_return_fields_omitting_id_and_title(patch_get_client: MagicMock) -> None:
+    """Regression: list_documents with return_fields=["created","tags"] succeeds without error."""
+    patch_get_client.documents.list.return_value = MagicMock(
+        count=1,
+        results=[make_document(id=3, title="Hello", correspondent=5)],
+    )
+    result = list_documents(return_fields=["created", "tags"])
+    doc = result.items[0]
+    assert doc.id == 3        # silently added
+    assert doc.title == ""    # required str → zero value
+    assert doc.correspondent is None
 
 
 def test_list_documents_passes_ids(patch_get_client: MagicMock) -> None:
@@ -305,6 +341,21 @@ def test_get_document_returns_filtered(patch_get_client: MagicMock) -> None:
     patch_get_client.documents.get.assert_called_once_with(id=7, include_metadata=False)
     assert result.id == 7
     assert result.content is None
+
+
+def test_get_document_always_includes_id_even_when_omitted(patch_get_client: MagicMock) -> None:
+    """Regression: id is silently re-added when caller omits it from return_fields."""
+    patch_get_client.documents.get.return_value = make_document(id=55, title="T")
+    result = get_document(55, return_fields=["created"])
+    assert result.id == 55
+
+
+def test_get_document_return_fields_omitting_title(patch_get_client: MagicMock) -> None:
+    """Regression: get_document with return_fields=["created"] succeeds; title becomes ''."""
+    patch_get_client.documents.get.return_value = make_document(id=10, title="Important")
+    result = get_document(10, return_fields=["created"])
+    assert result.id == 10    # silently added
+    assert result.title == "" # required str → zero value
 
 
 def test_get_document_default_return_fields_excludes_content(patch_get_client: MagicMock) -> None:
@@ -677,10 +728,14 @@ def test_list_documents_omits_inclusive_date_bounds_when_none(patch_get_client: 
 
 def test_list_document_notes_calls_client(patch_get_client: MagicMock) -> None:
     mock_note = MagicMock(spec=DocumentNote)
-    patch_get_client.documents.notes.list.return_value = [mock_note]
+    paged = MagicMock()
+    paged.results = [mock_note]
+    paged.count = 1
+    patch_get_client.documents.notes.list.return_value = paged
     result = list_document_notes(42)
-    patch_get_client.documents.notes.list.assert_called_once_with(42)
-    assert result == [mock_note]
+    patch_get_client.documents.notes.list.assert_called_once_with(42, page=None, page_size=None)
+    assert result.count == 1
+    assert result.items == [mock_note]
 
 
 def test_create_document_note_calls_client(patch_get_client: MagicMock) -> None:
