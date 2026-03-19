@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock
 
-from easypaperless import DocumentMetadata, DocumentNote, SetPermissions
+from easypaperless import DocumentMetadata, SetPermissions
 
 from easypaperless_mcp.tools.documents import (
     _LIST_RETURN_FIELDS,
@@ -16,12 +16,9 @@ from easypaperless_mcp.tools.documents import (
     bulk_set_document_type,
     bulk_set_permissions,
     bulk_set_storage_path,
-    create_document_note,
     delete_document,
-    delete_document_note,
     get_document,
     get_document_metadata,
-    list_document_notes,
     list_documents,
     update_document,
     upload_document,
@@ -720,32 +717,3 @@ def test_list_documents_omits_inclusive_date_bounds_when_none(patch_get_client: 
     assert "modified_from" not in call_kwargs
     assert "modified_until" not in call_kwargs
 
-
-# ---------------------------------------------------------------------------
-# document notes
-# ---------------------------------------------------------------------------
-
-
-def test_list_document_notes_calls_client(patch_get_client: MagicMock) -> None:
-    mock_note = MagicMock(spec=DocumentNote)
-    paged = MagicMock()
-    paged.results = [mock_note]
-    paged.count = 1
-    patch_get_client.documents.notes.list.return_value = paged
-    result = list_document_notes(42)
-    patch_get_client.documents.notes.list.assert_called_once_with(42, page=None, page_size=None)
-    assert result.count == 1
-    assert result.items == [mock_note]
-
-
-def test_create_document_note_calls_client(patch_get_client: MagicMock) -> None:
-    mock_note = MagicMock(spec=DocumentNote)
-    patch_get_client.documents.notes.create.return_value = mock_note
-    result = create_document_note(42, "Hello note")
-    patch_get_client.documents.notes.create.assert_called_once_with(42, note="Hello note")
-    assert result is mock_note
-
-
-def test_delete_document_note_calls_client(patch_get_client: MagicMock) -> None:
-    delete_document_note(42, 7)
-    patch_get_client.documents.notes.delete.assert_called_once_with(42, 7)

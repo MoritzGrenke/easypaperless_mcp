@@ -1,6 +1,6 @@
 # Feature Index
 
-**Next Available ID:** 0018
+**Next Available ID:** 0020
 
 | ID | Type | Name | Status | File |
 |----|------|------|--------|------|
@@ -21,3 +21,4 @@
 | 0015 | bug | `list_correspondents` fails with plain HTTP request on HTTPS instances | RESOLVED | [0015-bug-https_url_sends_plain_http.md](0015-bug-https_url_sends_plain_http.md) |
 | 0016 | maintenance | Migrate easypaperless_mcp to easypaperless 0.3.1 | QA PASSED | [0016-maintenance-migrate_to_easypaperless_0_3_1.md](0016-maintenance-migrate_to_easypaperless_0_3_1.md) |
 | 0017 | bug | `_filter_fields` sets required non-nullable fields to `None` when omitted from `return_fields` | QA PASSED | [0017-bug-filter_fields_fails_for_required_fields.md](0017-bug-filter_fields_fails_for_required_fields.md) |
+| 0018 | bug | Document notes tools registered twice, causing duplicate tool names | QA PASSED | [0018-bug-duplicate_document_notes_tools.md](0018-bug-duplicate_document_notes_tools.md) |

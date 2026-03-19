@@ -2,7 +2,7 @@
 
 from typing import Any, get_args, get_origin
 
-from easypaperless import UNSET, Document, DocumentMetadata, DocumentNote, SetPermissions
+from easypaperless import UNSET, Document, DocumentMetadata, SetPermissions
 from fastmcp import FastMCP
 from pydantic.fields import PydanticUndefined  # type: ignore[attr-defined]
 
@@ -656,57 +656,3 @@ def bulk_set_permissions(
     client.documents.bulk_set_permissions(
         ids, set_permissions=set_permissions, owner=owner, merge=merge  # type: ignore[arg-type]
     )
-
-
-# ---------------------------------------------------------------------------
-# Document notes tools
-# ---------------------------------------------------------------------------
-
-
-@documents.tool
-def list_document_notes(
-    id: int,
-    page: int | None = None,
-    page_size: int | None = None,
-) -> ListResult[DocumentNote]:
-    """List all notes attached to a document.
-
-    Args:
-        id: Numeric ID of the document whose notes to retrieve.
-        page: Page number to retrieve (1-based). Omit to retrieve the first page.
-        page_size: Number of notes per page. Omit to use the server default.
-
-    Returns:
-        ListResult with count (total notes for this document in paperless-ngx)
-        and items (notes on the requested page).
-    """
-    client = get_client()
-    paged = client.documents.notes.list(id, page=page, page_size=page_size)
-    return ListResult(count=paged.count, items=paged.results)
-
-
-@documents.tool
-def create_document_note(id: int, note: str) -> DocumentNote:
-    """Add a note to a document.
-
-    Args:
-        id: Numeric ID of the document to annotate.
-        note: Text content of the note.
-
-    Returns:
-        The created DocumentNote.
-    """
-    client = get_client()
-    return client.documents.notes.create(id, note=note)
-
-
-@documents.tool
-def delete_document_note(id: int, note_id: int) -> None:
-    """Delete a note from a document.
-
-    Args:
-        id: Numeric ID of the document that owns the note.
-        note_id: Numeric ID of the note to delete.
-    """
-    client = get_client()
-    client.documents.notes.delete(id, note_id)
