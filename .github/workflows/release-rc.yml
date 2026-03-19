@@ -1,13 +1,12 @@
-name: Release
+name: Release RC
 
 on:
   push:
     tags:
-      - "v*.*.*"
-      - "!v*.*.*-*"
+      - "v*.*.*-rc"
 
 jobs:
-  release:
+  release-rc:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -35,9 +34,10 @@ jobs:
           push: true
           tags: |
             ghcr.io/moritzgrenke/easypaperless_mcp:${{ steps.tag.outputs.version }}
-            ghcr.io/moritzgrenke/easypaperless_mcp:latest
+            ghcr.io/moritzgrenke/easypaperless_mcp:rc
 
-      - name: Create GitHub Release
+      - name: Create GitHub Pre-Release
         uses: softprops/action-gh-release@v2
         with:
+          prerelease: true
           generate_release_notes: true
