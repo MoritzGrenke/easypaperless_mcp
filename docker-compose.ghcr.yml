@@ -1,6 +1,6 @@
 services:
   easypaperless-mcp:
-    build: .
+    image: ghcr.io/moritzgrenke/easypaperless_mcp:latest
     ports:
       - "8000:8000"
     environment:

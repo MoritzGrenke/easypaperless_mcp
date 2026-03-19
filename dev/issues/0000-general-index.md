@@ -1,6 +1,6 @@
 # Feature Index
 
-**Next Available ID:** 0019
+**Next Available ID:** 0020
 
 | ID | Type | Name | Status | File |
 |----|------|------|--------|------|
@@ -22,3 +22,4 @@
 | 0016 | maintenance | Migrate easypaperless_mcp to easypaperless 0.3.1 | QA PASSED | [0016-maintenance-migrate_to_easypaperless_0_3_1.md](0016-maintenance-migrate_to_easypaperless_0_3_1.md) |
 | 0017 | bug | `_filter_fields` sets required non-nullable fields to `None` when omitted from `return_fields` | QA PASSED | [0017-bug-filter_fields_fails_for_required_fields.md](0017-bug-filter_fields_fails_for_required_fields.md) |
 | 0018 | bug | Document notes tools registered twice, causing duplicate tool names | QA PASSED | [0018-bug-duplicate_document_notes_tools.md](0018-bug-duplicate_document_notes_tools.md) |
+| 0019 | feature | Client-side authentication credentials for secure MCP deployments | QA PASSED | [0019-feature-client_side_auth_credentials.md](0019-feature-client_side_auth_credentials.md) |

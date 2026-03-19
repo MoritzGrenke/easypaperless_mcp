@@ -1,11 +1,12 @@
 """Integration test fixtures — require a live paperless-ngx instance."""
 
 import os
+from collections.abc import Generator
 
 import pytest
 from easypaperless import SyncPaperlessClient
 
-import easypaperless_mcp.client as _client_module
+from easypaperless_mcp.client import _request_token, _request_url
 
 
 def pytest_configure(config: pytest.Config) -> None:
@@ -22,8 +23,25 @@ def require_env() -> None:
         )
 
 
+@pytest.fixture(scope="session", autouse=True)
+def set_contextvars(require_env: None) -> Generator[None, None, None]:
+    """Populate ContextVars from env vars so tool functions can call get_client().
+
+    Tool functions call get_client() which reads from _request_token/_request_url
+    ContextVars (set by CredentialMiddleware in production). Integration tests call
+    tools directly, bypassing the middleware, so we seed the ContextVars here.
+    """
+    tok = _request_token.set(os.environ["PAPERLESS_TOKEN"])
+    url_tok = _request_url.set(os.environ["PAPERLESS_URL"])
+    yield
+    _request_token.reset(tok)
+    _request_url.reset(url_tok)
+
+
 @pytest.fixture(scope="session")
 def paperless_client() -> SyncPaperlessClient:
     """Return a real SyncPaperlessClient for the test instance."""
-    _client_module._client = None  # reset singleton so env vars are picked up
-    return _client_module.get_client()
+    return SyncPaperlessClient(
+        url=os.environ["PAPERLESS_URL"],
+        api_token=os.environ["PAPERLESS_TOKEN"],
+    )

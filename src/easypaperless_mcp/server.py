@@ -1,7 +1,11 @@
 import os
 
+import mcp.types as mt
 from fastmcp import FastMCP
+from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
+from fastmcp.tools.tool import ToolResult
 
+from .client import SERVER_URL, _request_token, _request_url
 from .tools.correspondents import correspondents
 from .tools.custom_fields import custom_fields
 from .tools.document_notes import document_notes
@@ -10,7 +14,56 @@ from .tools.documents import documents
 from .tools.storage_paths import storage_paths
 from .tools.tags import tags
 
-mcp = FastMCP("easypaperless")
+
+class CredentialMiddleware(Middleware):
+    """Resolve MCP-client-supplied credentials before each tool call.
+
+    For **stdio** transport the MCP client spawns the server process and
+    injects credentials as process environment variables.  Both
+    ``PAPERLESS_URL`` and ``PAPERLESS_TOKEN`` are read from ``os.environ``.
+
+    For **HTTP** transport credentials must be passed as HTTP request headers:
+
+    - ``X-Paperless-Token`` — the paperless-ngx API token (required).
+    - ``X-Paperless-URL`` — the paperless-ngx base URL (required when
+      ``PAPERLESS_URL`` is not set in the server environment).
+
+    If ``PAPERLESS_URL`` **is** set in the server environment, it is used
+    regardless of any client-supplied ``X-Paperless-URL`` value.  This lets
+    operators lock the target instance in Docker deployments.
+
+    ``PAPERLESS_TOKEN`` is **never** read from the server environment.
+    """
+
+    async def on_call_tool(
+        self,
+        context: MiddlewareContext[mt.CallToolRequestParams],
+        call_next: CallNext[mt.CallToolRequestParams, ToolResult],
+    ) -> ToolResult:
+        from fastmcp.server.context import _current_transport
+
+        transport = _current_transport.get()
+
+        if transport == "stdio":
+            token: str | None = os.environ.get("PAPERLESS_TOKEN")
+            url: str | None = os.environ.get("PAPERLESS_URL")
+        else:
+            from fastmcp.server.dependencies import get_http_request
+
+            request = get_http_request()
+            token = request.headers.get("x-paperless-token")
+            url = SERVER_URL or request.headers.get("x-paperless-url")
+
+        tok = _request_token.set(token)
+        url_tok = _request_url.set(url)
+        try:
+            return await call_next(context)
+        finally:
+            _request_token.reset(tok)
+            _request_url.reset(url_tok)
+
+
+mcp = FastMCP("easypaperless", middleware=[CredentialMiddleware()])
 mcp.mount(documents)
 mcp.mount(document_notes)
 mcp.mount(tags)

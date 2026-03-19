@@ -23,7 +23,14 @@ Exposes **51 tools** across 7 resource sub-servers so AI agents can read, search
 - [uv](https://github.com/astral-sh/uv) package manager
 - A running paperless-ngx instance with an API token
 
-## Claude Desktop Setup
+## Security Model
+
+Credentials are always supplied by the **MCP client**, never stored on the server.
+
+- **`PAPERLESS_TOKEN`** must be configured in your MCP client. It is never read from the server environment. Storing it server-side would allow any client that can reach the server URL to access your paperless-ngx instance.
+- **`PAPERLESS_URL`** can optionally be locked on the server side (Docker env). If set server-side, it applies to all clients and cannot be overridden. If not set, each client supplies their own URL.
+
+## Claude Desktop Setup (stdio — local)
 
 Add the following to your Claude Desktop config file:
 
@@ -52,9 +59,9 @@ Add the following to your Claude Desktop config file:
 
 Restart Claude Desktop after saving.
 
-## Connecting Claude Desktop to a Remote Docker Server
+## Connecting Claude Desktop to a Remote Docker Server (HTTP)
 
-If the server runs in Docker and you want to connect Claude Desktop to it via HTTP, the "Custom MCP Server" connector in the Claude Desktop UI does not work reliably. Use `mcp-remote` as a local stdio bridge instead.
+If the server runs in Docker, use `mcp-remote` as a local stdio bridge.  Pass your credentials as request headers so they never touch the server's environment.
 
 **Requirements:** Node.js must be installed.
 
@@ -68,21 +75,29 @@ Add the following to your Claude Desktop config file:
   "mcpServers": {
     "easypaperless": {
       "command": "npx",
-      "args": ["-y", "mcp-remote", "https://your-server-url/mcp"]
+      "args": [
+        "-y", "mcp-remote",
+        "https://your-server-url/mcp",
+        "--header", "X-Paperless-Token: your-token",
+        "--header", "X-Paperless-URL: http://your-paperless-host:8000"
+      ]
     }
   }
 }
 ```
 
+Omit `--header X-Paperless-URL` if `PAPERLESS_URL` is already set in the server's Docker environment.
+
 Restart Claude Desktop after saving. On first start, `npx` downloads `mcp-remote` automatically.
 
 ## Docker Deployment
 
-Copy `.env.example` to `.env` and fill in your credentials:
+Copy `.env.example` to `.env`:
 
 ```
-PAPERLESS_URL=http://your-paperless-ngx-host:8000
-PAPERLESS_TOKEN=your-api-token-here
+# Optionally lock the paperless-ngx URL for all clients:
+# PAPERLESS_URL=http://your-paperless-ngx-host:8000
+
 MCP_TRANSPORT=streamable-http
 ```
 
@@ -94,13 +109,23 @@ docker compose up --build
 
 The MCP server listens on port `8000` using the `streamable-http` transport.
 
-## Environment Variables
+> **Do NOT add `PAPERLESS_TOKEN` to `.env` or the Docker environment.** The token must be supplied by each MCP client via the `X-Paperless-Token` request header (see above).
+
+## Server Environment Variables
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `PAPERLESS_URL` | yes | Base URL of your paperless-ngx instance (e.g. `http://localhost:8000`) |
-| `PAPERLESS_TOKEN` | yes | paperless-ngx API token |
+| `PAPERLESS_URL` | no | Lock the paperless-ngx URL for all clients. If unset, each client supplies it. |
 | `MCP_TRANSPORT` | no | `stdio` (default) or `streamable-http` |
+
+## MCP Client Configuration
+
+| Header / env var | Transport | Required | Description |
+|------------------|-----------|----------|-------------|
+| `PAPERLESS_TOKEN` env var | stdio | yes | paperless-ngx API token (set in Claude Desktop `"env"` config) |
+| `PAPERLESS_URL` env var | stdio | yes | paperless-ngx base URL (set in Claude Desktop `"env"` config) |
+| `X-Paperless-Token` header | HTTP | yes | paperless-ngx API token (passed via `mcp-remote --header`) |
+| `X-Paperless-URL` header | HTTP | if server URL not locked | paperless-ngx base URL (passed via `mcp-remote --header`) |
 
 ## Tool Reference
 

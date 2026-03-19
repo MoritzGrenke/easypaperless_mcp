@@ -42,3 +42,10 @@ custom_fields.create(): extra_data desc?!
 storage_paths.create(): path desc?!
 
 sorting: make a docstring remark not to use the - prefix, but to using descending=True param. 
+
+
+## 19.03
+change server so that it needs a token send by the client. instead of a server .env file. this is very important for security.
+
+implement env settings to allow to disable tools. - it is ok, that the user only can use tools he is privileged for based on its token - but it is cleaner when tools are disabled. 
+prevents context wasting when trying to use tools the user isn't even privileged for.
