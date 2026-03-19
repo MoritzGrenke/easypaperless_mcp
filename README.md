@@ -52,6 +52,30 @@ Add the following to your Claude Desktop config file:
 
 Restart Claude Desktop after saving.
 
+## Connecting Claude Desktop to a Remote Docker Server
+
+If the server runs in Docker and you want to connect Claude Desktop to it via HTTP, the "Custom MCP Server" connector in the Claude Desktop UI does not work reliably. Use `mcp-remote` as a local stdio bridge instead.
+
+**Requirements:** Node.js must be installed.
+
+Add the following to your Claude Desktop config file:
+
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "easypaperless": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://your-server-url/mcp"]
+    }
+  }
+}
+```
+
+Restart Claude Desktop after saving. On first start, `npx` downloads `mcp-remote` automatically.
+
 ## Docker Deployment
 
 Copy `.env.example` to `.env` and fill in your credentials:
