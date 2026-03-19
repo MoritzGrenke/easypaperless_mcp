@@ -1,5 +1,7 @@
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
+LABEL org.opencontainers.image.description="MCP server for paperless-ngx based on the easypaperless API wrapper"
+
 WORKDIR /app
 
 COPY pyproject.toml uv.lock .
