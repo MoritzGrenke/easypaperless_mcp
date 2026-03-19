@@ -21,6 +21,18 @@ mcp.mount(storage_paths)
 
 
 def main() -> None:
+    """Start the easypaperless MCP server.
+
+    Reads ``MCP_TRANSPORT`` from the environment to select the transport:
+
+    - ``stdio`` (default) — for local use with Claude Desktop or the MCP
+      Inspector.
+    - ``streamable-http`` or ``http`` — starts an HTTP server on
+      ``0.0.0.0:8000``, intended for Docker / remote deployments.
+
+    Raises:
+        ValueError: If ``MCP_TRANSPORT`` is set to an unsupported value.
+    """
     transport = os.environ.get("MCP_TRANSPORT", "stdio")
     if transport == "stdio":
         mcp.run(transport="stdio")

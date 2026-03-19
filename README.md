@@ -1,6 +1,27 @@
 # easypaperless-mcp
 
-MCP server for [paperless-ngx](https://docs.paperless-ngx.com/) via the [easypaperless](https://pypi.org/project/easypaperless/) API wrapper.
+MCP server for [paperless-ngx](https://docs.paperless-ngx.com/) built on top of the [easypaperless](https://pypi.org/project/easypaperless/) Python API wrapper.
+
+Exposes **51 tools** across 7 resource sub-servers so AI agents can read, search, create, update, and delete every major paperless-ngx resource.
+
+## Features
+
+- **Documents** — list (with rich filtering), get, update, delete, upload, bulk operations, metadata
+- **Document Notes** — list, create, delete per-document notes
+- **Tags** — full CRUD + bulk delete and bulk permissions
+- **Correspondents** — full CRUD + bulk delete and bulk permissions
+- **Document Types** — full CRUD + bulk delete and bulk permissions
+- **Custom Fields** — full CRUD
+- **Storage Paths** — full CRUD + bulk delete and bulk permissions
+- Token-efficient responses: `list_documents` and `get_document` ship a compact default field set; pass `return_fields` to customise
+- All list tools return a `count` field with the total number of matching records in paperless-ngx (not just the current page)
+- Transports: `stdio` (local / Claude Desktop) and `streamable-http` (Docker / remote)
+
+## Requirements
+
+- Python 3.11 or newer
+- [uv](https://github.com/astral-sh/uv) package manager
+- A running paperless-ngx instance with an API token
 
 ## Claude Desktop Setup
 
@@ -29,14 +50,50 @@ Add the following to your Claude Desktop config file:
 }
 ```
 
-Restart Claude Desktop after saving. The tools `list_documents`, `get_document`, and `search_documents` will appear in the Tools menu.
+Restart Claude Desktop after saving.
 
 ## Docker Deployment
 
-Copy `.env.example` to `.env` and fill in your credentials, then:
+Copy `.env.example` to `.env` and fill in your credentials:
+
+```
+PAPERLESS_URL=http://your-paperless-ngx-host:8000
+PAPERLESS_TOKEN=your-api-token-here
+MCP_TRANSPORT=streamable-http
+```
+
+Then start the server:
 
 ```bash
 docker compose up --build
 ```
 
-The server runs on port `8000` using the `streamable-http` transport.
+The MCP server listens on port `8000` using the `streamable-http` transport.
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `PAPERLESS_URL` | yes | Base URL of your paperless-ngx instance (e.g. `http://localhost:8000`) |
+| `PAPERLESS_TOKEN` | yes | paperless-ngx API token |
+| `MCP_TRANSPORT` | no | `stdio` (default) or `streamable-http` |
+
+## Tool Reference
+
+See [`docs/tool-reference.md`](docs/tool-reference.md) for the full list of tools with parameters.
+
+## Development
+
+```bash
+# Install dependencies (including dev extras)
+uv sync
+
+# Run tests
+uv run pytest
+
+# Lint
+uv run ruff check src tests
+
+# Type-check
+uv run mypy src
+```
