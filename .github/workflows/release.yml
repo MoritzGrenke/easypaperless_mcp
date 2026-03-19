@@ -33,8 +33,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/moritzgrenke/easypaperless-mcp:${{ steps.tag.outputs.version }}
-            ghcr.io/moritzgrenke/easypaperless-mcp:latest
+            ghcr.io/moritzgrenke/easypaperless_mcp:${{ steps.tag.outputs.version }}
+            ghcr.io/moritzgrenke/easypaperless_mcp:latest
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
