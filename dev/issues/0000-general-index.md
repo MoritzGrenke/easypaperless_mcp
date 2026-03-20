@@ -1,6 +1,6 @@
 # Feature Index
 
-**Next Available ID:** 0020
+**Next Available ID:** 0021
 
 | ID | Type | Name | Status | File |
 |----|------|------|--------|------|
@@ -23,3 +23,4 @@
 | 0017 | bug | `_filter_fields` sets required non-nullable fields to `None` when omitted from `return_fields` | QA PASSED | [0017-bug-filter_fields_fails_for_required_fields.md](0017-bug-filter_fields_fails_for_required_fields.md) |
 | 0018 | bug | Document notes tools registered twice, causing duplicate tool names | QA PASSED | [0018-bug-duplicate_document_notes_tools.md](0018-bug-duplicate_document_notes_tools.md) |
 | 0019 | feature | Client-side authentication credentials for secure MCP deployments | QA PASSED | [0019-feature-client_side_auth_credentials.md](0019-feature-client_side_auth_credentials.md) |
+| 0020 | feature | Users sub-server with full resource tool coverage | QA PASSED | [0020-feature-users_subserver_and_tools.md](0020-feature-users_subserver_and_tools.md) |

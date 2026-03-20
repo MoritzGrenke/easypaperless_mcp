@@ -13,6 +13,7 @@ from .tools.document_types import document_types
 from .tools.documents import documents
 from .tools.storage_paths import storage_paths
 from .tools.tags import tags
+from .tools.users import users
 
 
 class CredentialMiddleware(Middleware):
@@ -71,6 +72,7 @@ mcp.mount(correspondents)
 mcp.mount(custom_fields)
 mcp.mount(document_types)
 mcp.mount(storage_paths)
+mcp.mount(users)
 
 
 def main() -> None:
