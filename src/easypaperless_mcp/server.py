@@ -13,6 +13,7 @@ from .tools.document_types import document_types
 from .tools.documents import documents
 from .tools.storage_paths import storage_paths
 from .tools.tags import tags
+from .tools.trash import trash
 from .tools.users import users
 
 
@@ -72,6 +73,7 @@ mcp.mount(correspondents)
 mcp.mount(custom_fields)
 mcp.mount(document_types)
 mcp.mount(storage_paths)
+mcp.mount(trash)
 mcp.mount(users)
 
 

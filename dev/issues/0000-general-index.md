@@ -1,6 +1,6 @@
 # Feature Index
 
-**Next Available ID:** 0021
+**Next Available ID:** 0022
 
 | ID | Type | Name | Status | File |
 |----|------|------|--------|------|
@@ -24,3 +24,4 @@
 | 0018 | bug | Document notes tools registered twice, causing duplicate tool names | QA PASSED | [0018-bug-duplicate_document_notes_tools.md](0018-bug-duplicate_document_notes_tools.md) |
 | 0019 | feature | Client-side authentication credentials for secure MCP deployments | QA PASSED | [0019-feature-client_side_auth_credentials.md](0019-feature-client_side_auth_credentials.md) |
 | 0020 | feature | Users sub-server with full resource tool coverage | QA PASSED | [0020-feature-users_subserver_and_tools.md](0020-feature-users_subserver_and_tools.md) |
+| 0021 | feature | Trash sub-server with full resource tool coverage | OPEN | [0021-feature-trash_subserver_and_tools.md](0021-feature-trash_subserver_and_tools.md) |
