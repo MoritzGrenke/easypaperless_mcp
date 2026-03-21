@@ -6,8 +6,9 @@ Credentials are always provided by the MCP client, never stored server-side:
   process and injects ``PAPERLESS_URL`` and ``PAPERLESS_TOKEN`` as process
   environment variables via the ``"env"`` key in ``claude_desktop_config.json``.
 
-- **HTTP transport** (e.g. Docker + mcp-remote): the MCP client passes
-  ``X-Paperless-Token`` as an HTTP request header for every request.
+- **HTTP transport** (e.g. Docker + mcp-remote): the MCP client passes the
+  token via the ``Authorization: Bearer <token>`` header (preferred) or the
+  deprecated ``X-Paperless-Token`` header.
   ``PAPERLESS_URL`` may optionally be locked on the server side (Docker env);
   if not set server-side, the client supplies it via the ``X-Paperless-URL``
   header.
@@ -61,7 +62,8 @@ def get_client() -> SyncPaperlessClient:
         raise RuntimeError(
             "PAPERLESS_TOKEN is missing. Configure it in your MCP client — do NOT set it on the server.\n"
             "  • stdio / Claude Desktop: add PAPERLESS_TOKEN to the 'env' section of claude_desktop_config.json\n"
-            "  • HTTP / mcp-remote: pass --header 'X-Paperless-Token: <your-token>'"
+            "  • HTTP / mcp-remote: pass --header 'Authorization: Bearer <your-token>'\n"
+            "    (legacy alternative: --header 'X-Paperless-Token: <your-token>')"
         )
     if not url:
         raise RuntimeError(

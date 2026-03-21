@@ -230,6 +230,119 @@ async def test_http_no_url_header_and_no_server_url_sets_none(middleware, contex
 
 
 # ---------------------------------------------------------------------------
+# HTTP transport — Authorization: Bearer header
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_http_sets_token_from_authorization_bearer(middleware, context):
+    """Authorization: Bearer token must be extracted and used as paperless token."""
+    captured_token = None
+
+    async def capture(ctx):
+        nonlocal captured_token
+        captured_token = _request_token.get()
+        return MagicMock()
+
+    request = _make_http_request({"authorization": "Bearer bearer-token", "x-paperless-url": "http://x"})
+    transport_mock = _make_transport_mock("http")
+
+    with patch("fastmcp.server.context._current_transport", transport_mock), \
+         patch("fastmcp.server.dependencies.get_http_request", return_value=request), \
+         patch("easypaperless_mcp.server.SERVER_URL", None):
+        await middleware.on_call_tool(context, capture)
+
+    assert captured_token == "bearer-token"
+
+
+@pytest.mark.asyncio
+async def test_http_bearer_takes_precedence_over_x_paperless_token(middleware, context):
+    """When both Authorization: Bearer and X-Paperless-Token are present, Bearer wins."""
+    captured_token = None
+
+    async def capture(ctx):
+        nonlocal captured_token
+        captured_token = _request_token.get()
+        return MagicMock()
+
+    request = _make_http_request({
+        "authorization": "Bearer bearer-wins",
+        "x-paperless-token": "x-header-loses",
+        "x-paperless-url": "http://x",
+    })
+    transport_mock = _make_transport_mock("http")
+
+    with patch("fastmcp.server.context._current_transport", transport_mock), \
+         patch("fastmcp.server.dependencies.get_http_request", return_value=request), \
+         patch("easypaperless_mcp.server.SERVER_URL", None):
+        await middleware.on_call_tool(context, capture)
+
+    assert captured_token == "bearer-wins"
+
+
+@pytest.mark.asyncio
+async def test_http_non_bearer_authorization_header_ignored(middleware, context):
+    """Authorization header with non-Bearer scheme must be ignored; token falls back to None."""
+    captured_token = "sentinel"
+
+    async def capture(ctx):
+        nonlocal captured_token
+        captured_token = _request_token.get()
+        return MagicMock()
+
+    request = _make_http_request({"authorization": "Basic dXNlcjpwYXNz", "x-paperless-url": "http://x"})
+    transport_mock = _make_transport_mock("http")
+
+    with patch("fastmcp.server.context._current_transport", transport_mock), \
+         patch("fastmcp.server.dependencies.get_http_request", return_value=request), \
+         patch("easypaperless_mcp.server.SERVER_URL", None):
+        await middleware.on_call_tool(context, capture)
+
+    assert captured_token is None
+
+
+@pytest.mark.asyncio
+async def test_http_x_paperless_token_emits_deprecation_warning(middleware, context, caplog):
+    """Using X-Paperless-Token must emit a deprecation warning in the server log."""
+    import logging
+
+    async def capture(ctx):
+        return MagicMock()
+
+    request = _make_http_request({"x-paperless-token": "old-token", "x-paperless-url": "http://x"})
+    transport_mock = _make_transport_mock("http")
+
+    with patch("fastmcp.server.context._current_transport", transport_mock), \
+         patch("fastmcp.server.dependencies.get_http_request", return_value=request), \
+         patch("easypaperless_mcp.server.SERVER_URL", None), \
+         caplog.at_level(logging.WARNING, logger="easypaperless_mcp.server"):
+        await middleware.on_call_tool(context, capture)
+
+    assert any("deprecated" in record.message.lower() for record in caplog.records)
+    assert any("Authorization" in record.message for record in caplog.records)
+
+
+@pytest.mark.asyncio
+async def test_http_bearer_no_deprecation_warning(middleware, context, caplog):
+    """Using Authorization: Bearer must NOT emit a deprecation warning."""
+    import logging
+
+    async def capture(ctx):
+        return MagicMock()
+
+    request = _make_http_request({"authorization": "Bearer clean-token", "x-paperless-url": "http://x"})
+    transport_mock = _make_transport_mock("http")
+
+    with patch("fastmcp.server.context._current_transport", transport_mock), \
+         patch("fastmcp.server.dependencies.get_http_request", return_value=request), \
+         patch("easypaperless_mcp.server.SERVER_URL", None), \
+         caplog.at_level(logging.WARNING, logger="easypaperless_mcp.server"):
+        await middleware.on_call_tool(context, capture)
+
+    assert not caplog.records
+
+
+# ---------------------------------------------------------------------------
 # ContextVar cleanup on exception
 # ---------------------------------------------------------------------------
 

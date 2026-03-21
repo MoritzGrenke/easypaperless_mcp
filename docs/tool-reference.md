@@ -1,4 +1,4 @@
-# Tool Reference (51 tools)
+# Tool Reference (59 tools)
 
 ## `bulk_add_tag`
 
@@ -237,6 +237,24 @@ Create a new tag.
 | `owner` | `integer` | no |  |
 | `set_permissions` | `object` | no |  |
 
+## `create_user`
+
+Create a new user account.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `username` | `string` | yes |  |
+| `email` | `string` | no |  |
+| `password` | `string` | no |  |
+| `first_name` | `string` | no |  |
+| `last_name` | `string` | no |  |
+| `date_joined` | `string` | no |  |
+| `is_staff` | `boolean` | no |  |
+| `is_active` | `boolean` | no |  |
+| `is_superuser` | `boolean` | no |  |
+| `groups` | `array` | no |  |
+| `user_permissions` | `array` | no |  |
+
 ## `delete_correspondent`
 
 Permanently delete a correspondent by its ID.
@@ -294,6 +312,22 @@ Permanently delete a tag by its ID.
 |-----------|------|----------|-------------|
 | `id` | `integer` | yes |  |
 
+## `delete_user`
+
+Permanently delete a user account by their ID.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | `integer` | yes |  |
+
+## `empty_trash`
+
+Permanently delete specific documents from the trash.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `document_ids` | `array` | yes |  |
+
 ## `get_correspondent`
 
 Fetch a single correspondent by its ID.
@@ -347,6 +381,14 @@ Fetch a single storage path by its ID.
 ## `get_tag`
 
 Fetch a single tag by its ID.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | `integer` | yes |  |
+
+## `get_user`
+
+Fetch a single user by their ID.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -483,6 +525,35 @@ List tags defined in paperless-ngx with optional filtering.
 | `ordering` | `string` | no |  |
 | `descending` | `boolean` | no |  |
 
+## `list_trash`
+
+List all documents currently in the paperless-ngx trash.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `page` | `integer` | no |  |
+| `page_size` | `integer` | no |  |
+
+## `list_users`
+
+List users defined in paperless-ngx with optional filtering.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `username_contains` | `string` | no |  |
+| `username_exact` | `string` | no |  |
+| `ordering` | `string` | no |  |
+| `page` | `integer` | no |  |
+| `page_size` | `integer` | no |  |
+
+## `restore_trash`
+
+Restore trashed documents back to active status.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `document_ids` | `array` | yes |  |
+
 ## `update_correspondent`
 
 Partially update a correspondent (PATCH semantics).
@@ -575,6 +646,25 @@ Partially update a tag (PATCH semantics).
 | `parent` | `integer` | no |  |
 | `owner` | `integer` | no |  |
 | `set_permissions` | `object` | no |  |
+
+## `update_user`
+
+Partially update a user account (PATCH semantics).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | `integer` | yes |  |
+| `username` | `string` | no |  |
+| `email` | `string` | no |  |
+| `password` | `string` | no |  |
+| `first_name` | `string` | no |  |
+| `last_name` | `string` | no |  |
+| `date_joined` | `string` | no |  |
+| `is_staff` | `boolean` | no |  |
+| `is_active` | `boolean` | no |  |
+| `is_superuser` | `boolean` | no |  |
+| `groups` | `array` | no |  |
+| `user_permissions` | `array` | no |  |
 
 ## `upload_document`
 

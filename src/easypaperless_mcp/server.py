@@ -1,3 +1,4 @@
+import logging
 import os
 
 import mcp.types as mt
@@ -16,6 +17,8 @@ from .tools.tags import tags
 from .tools.trash import trash
 from .tools.users import users
 
+logger = logging.getLogger(__name__)
+
 
 class CredentialMiddleware(Middleware):
     """Resolve MCP-client-supplied credentials before each tool call.
@@ -26,7 +29,11 @@ class CredentialMiddleware(Middleware):
 
     For **HTTP** transport credentials must be passed as HTTP request headers:
 
-    - ``X-Paperless-Token`` — the paperless-ngx API token (required).
+    - ``Authorization: Bearer <token>`` — the paperless-ngx API token
+      (preferred).
+    - ``X-Paperless-Token`` — the paperless-ngx API token (deprecated;
+      a warning is logged when used).  If both headers are present,
+      ``Authorization: Bearer`` takes precedence.
     - ``X-Paperless-URL`` — the paperless-ngx base URL (required when
       ``PAPERLESS_URL`` is not set in the server environment).
 
@@ -53,7 +60,17 @@ class CredentialMiddleware(Middleware):
             from fastmcp.server.dependencies import get_http_request
 
             request = get_http_request()
-            token = request.headers.get("x-paperless-token")
+            auth_header = request.headers.get("authorization")
+            if auth_header and auth_header.startswith("Bearer "):
+                token = auth_header[len("Bearer "):]
+            else:
+                x_token = request.headers.get("x-paperless-token")
+                if x_token:
+                    logger.warning(
+                        "X-Paperless-Token is deprecated. "
+                        "Use 'Authorization: Bearer <token>' instead."
+                    )
+                token = x_token
             url = SERVER_URL or request.headers.get("x-paperless-url")
 
         tok = _request_token.set(token)

@@ -2,7 +2,7 @@
 
 MCP server for [paperless-ngx](https://docs.paperless-ngx.com/) built on top of the [easypaperless](https://pypi.org/project/easypaperless/) Python API wrapper.
 
-Exposes **51 tools** across 7 resource sub-servers so AI agents can read, search, create, update, and delete every major paperless-ngx resource.
+Exposes **59 tools** across 9 resource sub-servers so AI agents can read, search, create, update, and delete every major paperless-ngx resource.
 
 ## Features
 
@@ -13,8 +13,11 @@ Exposes **51 tools** across 7 resource sub-servers so AI agents can read, search
 - **Document Types** — full CRUD + bulk delete and bulk permissions
 - **Custom Fields** — full CRUD
 - **Storage Paths** — full CRUD + bulk delete and bulk permissions
+- **Users** — full CRUD (list, get, create, update, delete)
+- **Trash** — list, restore, and permanently empty trashed documents
 - Token-efficient responses: `list_documents` and `get_document` ship a compact default field set; pass `return_fields` to customise
 - All list tools return a `count` field with the total number of matching records in paperless-ngx (not just the current page)
+- Client-side auth: credentials are passed per-request (env vars for stdio, HTTP headers for HTTP transport) — never stored server-side
 - Transports: `stdio` (local / Claude Desktop) and `streamable-http` (Docker / remote)
 
 ## Requirements
@@ -78,9 +81,12 @@ Add the following to your Claude Desktop config file:
       "args": [
         "-y", "mcp-remote",
         "https://your-server-url/mcp",
-        "--header", "X-Paperless-Token: your-token",
+        "--header", "Authorization:${AUTH_HEADER}",
         "--header", "X-Paperless-URL: http://your-paperless-host:8000"
-      ]
+      ],
+      "env": {
+        "AUTH_HEADER": "Bearer your-token"
+      }
     }
   }
 }
@@ -109,7 +115,7 @@ docker compose up --build
 
 The MCP server listens on port `8000` using the `streamable-http` transport.
 
-> **Do NOT add `PAPERLESS_TOKEN` to `.env` or the Docker environment.** The token must be supplied by each MCP client via the `X-Paperless-Token` request header (see above).
+> **Do NOT add `PAPERLESS_TOKEN` to `.env` or the Docker environment.** The token must be supplied by each MCP client via the `Authorization: Bearer <token>` request header (see above).
 
 ## Server Environment Variables
 
@@ -124,7 +130,8 @@ The MCP server listens on port `8000` using the `streamable-http` transport.
 |------------------|-----------|----------|-------------|
 | `PAPERLESS_TOKEN` env var | stdio | yes | paperless-ngx API token (set in Claude Desktop `"env"` config) |
 | `PAPERLESS_URL` env var | stdio | yes | paperless-ngx base URL (set in Claude Desktop `"env"` config) |
-| `X-Paperless-Token` header | HTTP | yes | paperless-ngx API token (passed via `mcp-remote --header`) |
+| `Authorization: Bearer <token>` header | HTTP | yes | paperless-ngx API token (preferred; passed via `mcp-remote --header`) |
+| `X-Paperless-Token` header | HTTP | yes (deprecated) | paperless-ngx API token — use `Authorization: Bearer` instead |
 | `X-Paperless-URL` header | HTTP | if server URL not locked | paperless-ngx base URL (passed via `mcp-remote --header`) |
 
 ## Tool Reference

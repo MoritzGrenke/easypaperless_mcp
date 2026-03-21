@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-03-20
+
+### Added
+
+#### Users
+- `list_users` — list with username filtering, ordering, and pagination.
+- `get_user` — fetch a single user by ID.
+- `create_user` — create a user account with optional email, password, name, role flags, and group/permission assignments.
+- `update_user` — PATCH semantics; pass `None` to clear nullable fields.
+- `delete_user` — permanently delete a user account.
+
+#### Trash
+- `list_trash` — list all documents currently in the trash with pagination.
+- `restore_trash` — restore one or more trashed documents back to active status.
+- `empty_trash` — permanently and irreversibly delete specific documents from the trash.
+
+#### Security
+- Client-side authentication: `PAPERLESS_TOKEN` is now resolved per request from the MCP client (env var for stdio, HTTP headers for HTTP transport). The token is never read from the server environment.
+- HTTP transport now accepts `Authorization: Bearer <token>` as the preferred auth header; `X-Paperless-Token` continues to work but is deprecated — a warning is logged when used.
+- If both `Authorization: Bearer` and `X-Paperless-Token` are present, `Authorization: Bearer` takes precedence.
+- `PAPERLESS_URL` can optionally be locked server-side (Docker); if not set, each client supplies it via `X-Paperless-URL` header.
+- `CredentialMiddleware` injected into the FastMCP server to handle per-request credential resolution.
+
+### Infrastructure
+- RC release workflow added to GitHub Actions.
+- Stable release workflow excludes pre-release tags.
+
 ## [0.1.0] - 2026-03-19
 
 Initial release of easypaperless-mcp.

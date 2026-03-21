@@ -1,6 +1,6 @@
 # Feature Index
 
-**Next Available ID:** 0022
+**Next Available ID:** 0023
 
 | ID | Type | Name | Status | File |
 |----|------|------|--------|------|
@@ -25,3 +25,4 @@
 | 0019 | feature | Client-side authentication credentials for secure MCP deployments | QA PASSED | [0019-feature-client_side_auth_credentials.md](0019-feature-client_side_auth_credentials.md) |
 | 0020 | feature | Users sub-server with full resource tool coverage | QA PASSED | [0020-feature-users_subserver_and_tools.md](0020-feature-users_subserver_and_tools.md) |
 | 0021 | feature | Trash sub-server with full resource tool coverage | OPEN | [0021-feature-trash_subserver_and_tools.md](0021-feature-trash_subserver_and_tools.md) |
+| 0022 | bug | `Authorization: Bearer` header not supported — `mcp-remote` auth fails | QA PASSED | [0022-bug-authorization_bearer_header_not_supported.md](0022-bug-authorization_bearer_header_not_supported.md) |
