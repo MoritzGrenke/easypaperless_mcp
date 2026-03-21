@@ -51,3 +51,10 @@ implement env settings to allow to disable tools. - it is ok, that the user only
 prevents context wasting when trying to use tools the user isn't even privileged for. so a disabled shouldn't be exposed to the ai at all.
 Actually: there is a possibility in claude desktop to disable single tools. so no need to configure this. The only reason to configure this would be to have it as a short cut. Instead of disabling the tools one by one
 the env parameter could be the user name. The server then looks up the permissions for this user - and reduces the tool set based on the permissions.
+
+
+## 21.03.
+
+create update delete users / permissions seem to be blocked by anthropic. claude isn't allowed to perform any of these operations.
+idea: flag or env variable "dangerously-circument-user-and-permission-blocks" boolean. and add a codeword for user (that only the server owner knows) 
+no high prio.

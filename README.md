@@ -26,15 +26,9 @@ Exposes **59 tools** across 9 resource sub-servers so AI agents can read, search
 - [uv](https://github.com/astral-sh/uv) package manager
 - A running paperless-ngx instance with an API token
 
-## Security Model
-
-Credentials are always supplied by the **MCP client**, never stored on the server.
-
-- **`PAPERLESS_TOKEN`** must be configured in your MCP client. It is never read from the server environment. Storing it server-side would allow any client that can reach the server URL to access your paperless-ngx instance.
-- **`PAPERLESS_URL`** can optionally be locked on the server side (Docker env). If set server-side, it applies to all clients and cannot be overridden. If not set, each client supplies their own URL.
-
 ## Claude Desktop Setup (stdio — local)
 
+In Claude Desktop: Settings -> Developer -> Edit Config
 Add the following to your Claude Desktop config file:
 
 **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
@@ -64,10 +58,12 @@ Restart Claude Desktop after saving.
 
 ## Connecting Claude Desktop to a Remote Docker Server (HTTP)
 
-If the server runs in Docker, use `mcp-remote` as a local stdio bridge.  Pass your credentials as request headers so they never touch the server's environment.
+So far I wasn't successful to connect the mcp server (in Docker) directly to Claude Desktop. The following worked for me:
+If the server runs in Docker, use `mcp-remote` as a local stdio bridge.  Pass your credentials as request headers.
 
 **Requirements:** Node.js must be installed.
 
+In Claude Desktop: Settings -> Developer -> Edit Config
 Add the following to your Claude Desktop config file:
 
 **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
@@ -92,9 +88,11 @@ Add the following to your Claude Desktop config file:
 }
 ```
 
-Omit `--header X-Paperless-URL` if `PAPERLESS_URL` is already set in the server's Docker environment.
+Omit `--header X-Paperless-URL` if `PAPERLESS_URL` is already set in the server's Docker environment (Recommended).
 
 Restart Claude Desktop after saving. On first start, `npx` downloads `mcp-remote` automatically.
+
+Read more about: [mcp-remote](https://www.npmjs.com/package/mcp-remote)
 
 ## Docker Deployment
 
