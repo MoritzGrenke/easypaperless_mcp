@@ -5,7 +5,8 @@ from unittest.mock import MagicMock
 from easypaperless import DocumentMetadata, SetPermissions
 
 from easypaperless_mcp.tools.documents import (
-    _LIST_RETURN_FIELDS,
+    _OMITTED_FIELDS_HINT,
+    _compute_omitted_fields,
     _filter_fields,
     bulk_add_tag,
     bulk_delete_documents,
@@ -35,44 +36,63 @@ from .conftest import make_document
 def test_filter_fields_keeps_listed_fields() -> None:
     doc = make_document(id=42, title="Keep Me")
     result = _filter_fields(doc, ["id", "title"])
-    assert result.id == 42
-    assert result.title == "Keep Me"
+    assert result["id"] == 42
+    assert result["title"] == "Keep Me"
 
 
-def test_filter_fields_nulls_unlisted_fields() -> None:
+def test_filter_fields_excludes_unlisted_fields() -> None:
     doc = make_document(correspondent=5)
     result = _filter_fields(doc, ["id", "title"])
-    assert result.correspondent is None
+    assert "correspondent" not in result
 
 
-def test_filter_fields_noop_when_all_listed() -> None:
+def test_filter_fields_all_listed_returns_full_dict() -> None:
     doc = make_document()
     all_fields = list(doc.__class__.model_fields.keys())
     result = _filter_fields(doc, all_fields)
-    assert result is doc
+    assert set(result.keys()) == set(all_fields)
 
 
-def test_filter_fields_list_fields_use_empty_list_not_none() -> None:
-    """Regression: non-nullable list fields must not be set to None."""
+def test_filter_fields_returns_only_requested_keys() -> None:
     doc = make_document(tags=[1, 2], notes=[], custom_fields=[])
     result = _filter_fields(doc, ["id", "title"])
-    assert result.tags == []
-    assert result.notes == []
-    assert result.custom_fields == []
+    assert "tags" not in result
+    assert "notes" not in result
+    assert "custom_fields" not in result
+    assert set(result.keys()) == {"id", "title"}
 
 
-def test_filter_fields_required_int_field_uses_zero() -> None:
-    """Regression: omitting id from return_fields must yield 0, not raise a validation error."""
-    doc = make_document(id=99, title="Test")
-    result = _filter_fields(doc, ["title"])
-    assert result.id == 0
+def test_filter_fields_unknown_field_silently_skipped() -> None:
+    doc = make_document(id=1)
+    result = _filter_fields(doc, ["id", "nonexistent_field"])
+    assert set(result.keys()) == {"id"}
 
 
-def test_filter_fields_required_str_field_uses_empty_string() -> None:
-    """Regression: omitting title from return_fields must yield '', not raise a validation error."""
-    doc = make_document(id=1, title="Something")
-    result = _filter_fields(doc, ["id"])
-    assert result.title == ""
+# ---------------------------------------------------------------------------
+# _compute_omitted_fields
+# ---------------------------------------------------------------------------
+
+
+def test_compute_omitted_fields_returns_omitted_names_and_hint() -> None:
+    doc = make_document(id=1, correspondent=5)
+    omitted = _compute_omitted_fields(doc, ["id", "title"])
+    all_fields = set(doc.__class__.model_fields)
+    expected_names = sorted(f for f in all_fields if f not in {"id", "title"})
+    assert omitted[:-1] == expected_names
+    assert omitted[-1] == _OMITTED_FIELDS_HINT
+
+
+def test_compute_omitted_fields_empty_when_all_included() -> None:
+    doc = make_document()
+    all_fields = list(doc.__class__.model_fields.keys())
+    omitted = _compute_omitted_fields(doc, all_fields)
+    assert omitted == []
+
+
+def test_compute_omitted_fields_hint_is_last_element() -> None:
+    doc = make_document()
+    omitted = _compute_omitted_fields(doc, ["id"])
+    assert omitted[-1] == _OMITTED_FIELDS_HINT
 
 
 # ---------------------------------------------------------------------------
@@ -91,44 +111,39 @@ def test_list_documents_calls_client(patch_get_client: MagicMock) -> None:
 def test_list_documents_applies_field_filter(patch_get_client: MagicMock) -> None:
     patch_get_client.documents.list.return_value = MagicMock(count=1, results=[make_document(correspondent=99)])
     result = list_documents(return_fields=["id", "title"])
-    assert result.items[0].correspondent is None
+    assert "correspondent" not in result.items[0]
 
 
 def test_list_documents_return_fields_id_title_only(patch_get_client: MagicMock) -> None:
-    """Only id and title survive; all other Document fields become None."""
+    """Only id and title appear in items; all other fields are absent."""
     patch_get_client.documents.list.return_value = MagicMock(count=1, results=[
         make_document(id=5, title="Hello", correspondent=3, document_type=2, tags=[1], archive_serial_number=99)
     ])
     result = list_documents(return_fields=["id", "title"])
-    doc = result.items[0]
-    assert doc.id == 5
-    assert doc.title == "Hello"
-    assert doc.correspondent is None
-    assert doc.document_type is None
-    assert doc.tags == []
-    assert doc.archive_serial_number is None
-    assert doc.created is None
-    assert doc.content is None
+    item = result.items[0]
+    assert item["id"] == 5
+    assert item["title"] == "Hello"
+    assert "correspondent" not in item
+    assert "document_type" not in item
+    assert "tags" not in item
+    assert "archive_serial_number" not in item
+    assert "created" not in item
+    assert "content" not in item
 
 
 def test_list_documents_default_return_fields_preserves_list_fields(patch_get_client: MagicMock) -> None:
-    """Default return_fields keeps exactly _LIST_RETURN_FIELDS; content is excluded."""
+    """Default return_fields keeps exactly _LIST_RETURN_FIELDS; content is absent."""
     patch_get_client.documents.list.return_value = MagicMock(count=1, results=[
         make_document(id=1, title="T", correspondent=7, tags=[2], archive_serial_number=10, content="secret")
     ])
     result = list_documents(return_fields=None)
-    doc = result.items[0]
-    # All _LIST_RETURN_FIELDS should survive
-    for field in _LIST_RETURN_FIELDS:
-        # skip fields that were not set (None by default is fine)
-        pass
-    assert doc.id == 1
-    assert doc.title == "T"
-    assert doc.correspondent == 7
-    assert doc.tags == [2]
-    assert doc.archive_serial_number == 10
-    # content is not in _LIST_RETURN_FIELDS
-    assert doc.content is None
+    item = result.items[0]
+    assert item["id"] == 1
+    assert item["title"] == "T"
+    assert item["correspondent"] == 7
+    assert item["tags"] == [2]
+    assert item["archive_serial_number"] == 10
+    assert "content" not in item
 
 
 def test_list_documents_field_filter_applied_to_all_results(patch_get_client: MagicMock) -> None:
@@ -139,8 +154,8 @@ def test_list_documents_field_filter_applied_to_all_results(patch_get_client: Ma
         make_document(id=3, correspondent=30),
     ])
     result = list_documents(return_fields=["id"])
-    assert all(doc.correspondent is None for doc in result.items)
-    assert [doc.id for doc in result.items] == [1, 2, 3]
+    assert all("correspondent" not in item for item in result.items)
+    assert [item["id"] for item in result.items] == [1, 2, 3]
 
 
 def test_list_documents_empty_result(patch_get_client: MagicMock) -> None:
@@ -197,7 +212,7 @@ def test_list_documents_always_includes_id_even_when_omitted(patch_get_client: M
         count=1, results=[make_document(id=7, title="Doc")]
     )
     result = list_documents(return_fields=["created", "tags"])
-    assert result.items[0].id == 7
+    assert result.items[0]["id"] == 7
 
 
 def test_list_documents_return_fields_omitting_id_and_title(patch_get_client: MagicMock) -> None:
@@ -207,10 +222,37 @@ def test_list_documents_return_fields_omitting_id_and_title(patch_get_client: Ma
         results=[make_document(id=3, title="Hello", correspondent=5)],
     )
     result = list_documents(return_fields=["created", "tags"])
-    doc = result.items[0]
-    assert doc.id == 3        # silently added
-    assert doc.title == ""    # required str → zero value
-    assert doc.correspondent is None
+    item = result.items[0]
+    assert item["id"] == 3        # silently added
+    assert "title" not in item    # excluded from return_fields
+    assert "correspondent" not in item
+
+
+def test_list_documents_omitted_fields_on_result(patch_get_client: MagicMock) -> None:
+    """omitted_fields on ListResult lists excluded field names plus hint."""
+    patch_get_client.documents.list.return_value = MagicMock(
+        count=1, results=[make_document(id=1, content="text")]
+    )
+    result = list_documents(return_fields=["id", "title"])
+    assert len(result.omitted_fields) > 1
+    assert "content" in result.omitted_fields
+    assert result.omitted_fields[-1] == _OMITTED_FIELDS_HINT
+
+
+def test_list_documents_omitted_fields_empty_when_all_fields_included(patch_get_client: MagicMock) -> None:
+    """omitted_fields is empty when all model fields are requested."""
+    doc = make_document()
+    all_fields = list(doc.__class__.model_fields.keys())
+    patch_get_client.documents.list.return_value = MagicMock(count=1, results=[doc])
+    result = list_documents(return_fields=all_fields)
+    assert result.omitted_fields == []
+
+
+def test_list_documents_omitted_fields_empty_for_empty_results(patch_get_client: MagicMock) -> None:
+    """omitted_fields is empty when no results are returned."""
+    patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
+    result = list_documents(return_fields=["id"])
+    assert result.omitted_fields == []
 
 
 def test_list_documents_passes_ids(patch_get_client: MagicMock) -> None:
@@ -336,47 +378,65 @@ def test_get_document_returns_filtered(patch_get_client: MagicMock) -> None:
     patch_get_client.documents.get.return_value = make_document(id=7, content="secret")
     result = get_document(7, return_fields=["id"])
     patch_get_client.documents.get.assert_called_once_with(id=7, include_metadata=False)
-    assert result.id == 7
-    assert result.content is None
+    assert result["id"] == 7
+    assert "content" not in result
 
 
 def test_get_document_always_includes_id_even_when_omitted(patch_get_client: MagicMock) -> None:
     """Regression: id is silently re-added when caller omits it from return_fields."""
     patch_get_client.documents.get.return_value = make_document(id=55, title="T")
     result = get_document(55, return_fields=["created"])
-    assert result.id == 55
+    assert result["id"] == 55
 
 
 def test_get_document_return_fields_omitting_title(patch_get_client: MagicMock) -> None:
-    """Regression: get_document with return_fields=["created"] succeeds; title becomes ''."""
+    """Regression: get_document with return_fields=["created"] excludes title from result."""
     patch_get_client.documents.get.return_value = make_document(id=10, title="Important")
     result = get_document(10, return_fields=["created"])
-    assert result.id == 10    # silently added
-    assert result.title == "" # required str → zero value
+    assert result["id"] == 10   # silently added
+    assert "title" not in result
 
 
 def test_get_document_default_return_fields_excludes_content(patch_get_client: MagicMock) -> None:
-    """content is not in _GET_RETURN_FIELDS so it is nulled in the default response."""
+    """content is not in _GET_RETURN_FIELDS so it is absent from the default response."""
     patch_get_client.documents.get.return_value = make_document(id=3, content="full text here")
     result = get_document(3)
-    assert result.content is None
+    assert "content" not in result
 
 
 def test_get_document_default_return_fields_preserves_get_fields(patch_get_client: MagicMock) -> None:
-    """All fields in _GET_RETURN_FIELDS are preserved with their values."""
+    """All fields in _GET_RETURN_FIELDS are present with their values."""
     patch_get_client.documents.get.return_value = make_document(
         id=4, title="My Doc", correspondent=2, document_type=1,
         storage_path=3, tags=[5], archive_serial_number=7, original_file_name="doc.pdf"
     )
     result = get_document(4)
-    assert result.id == 4
-    assert result.title == "My Doc"
-    assert result.correspondent == 2
-    assert result.document_type == 1
-    assert result.storage_path == 3
-    assert result.tags == [5]
-    assert result.archive_serial_number == 7
-    assert result.original_file_name == "doc.pdf"
+    assert result["id"] == 4
+    assert result["title"] == "My Doc"
+    assert result["correspondent"] == 2
+    assert result["document_type"] == 1
+    assert result["storage_path"] == 3
+    assert result["tags"] == [5]
+    assert result["archive_serial_number"] == 7
+    assert result["original_file_name"] == "doc.pdf"
+
+
+def test_get_document_includes_omitted_fields_metadata(patch_get_client: MagicMock) -> None:
+    """omitted_fields key lists excluded fields and the retrieval hint."""
+    patch_get_client.documents.get.return_value = make_document(id=1, content="text")
+    result = get_document(1, return_fields=["id", "title"])
+    assert "omitted_fields" in result
+    assert "content" in result["omitted_fields"]
+    assert result["omitted_fields"][-1] == _OMITTED_FIELDS_HINT
+
+
+def test_get_document_no_omitted_fields_when_all_requested(patch_get_client: MagicMock) -> None:
+    """omitted_fields is absent when all model fields are requested."""
+    doc = make_document(id=1)
+    all_fields = list(doc.__class__.model_fields.keys())
+    patch_get_client.documents.get.return_value = doc
+    result = get_document(1, return_fields=all_fields)
+    assert "omitted_fields" not in result
 
 
 # ---------------------------------------------------------------------------
@@ -624,6 +684,13 @@ def test_get_document_passes_include_metadata_true(patch_get_client: MagicMock) 
     patch_get_client.documents.get.return_value = make_document(id=1)
     get_document(1, include_metadata=True)
     patch_get_client.documents.get.assert_called_once_with(id=1, include_metadata=True)
+
+
+def test_get_document_returns_dict(patch_get_client: MagicMock) -> None:
+    """get_document returns a plain dict, not a Document model."""
+    patch_get_client.documents.get.return_value = make_document(id=1)
+    result = get_document(1)
+    assert isinstance(result, dict)
 
 
 # ---------------------------------------------------------------------------

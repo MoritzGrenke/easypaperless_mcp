@@ -1,10 +1,9 @@
 """Documents sub-server: MCP tools for the paperless-ngx documents resource."""
 
-from typing import Any, get_args, get_origin
+from typing import Any
 
 from easypaperless import UNSET, Document, DocumentMetadata, SetPermissions
 from fastmcp import FastMCP
-from pydantic.fields import PydanticUndefined  # type: ignore[attr-defined]
 
 from ..client import get_client
 from .models import ListResult
@@ -40,60 +39,39 @@ _GET_RETURN_FIELDS: list[str] = [
 ]
 
 
-_ZERO_VALUES: dict[type, Any] = {int: 0, str: "", bool: False}
+_OMITTED_FIELDS_HINT = "Pass these field names in return_fields to include them."
 
 
-def _zero_value_for(annotation: Any) -> Any:
-    """Return a type-appropriate zero/empty value for a required field annotation.
-
-    Handles plain types (``int``, ``str``, ``bool``) and union types such as
-    ``int | None`` by inspecting the first non-``None`` arg.  Falls back to
-    ``None`` for any unrecognised annotation.
-    """
-    if annotation in _ZERO_VALUES:
-        return _ZERO_VALUES[annotation]
-    origin = get_origin(annotation)
-    # Union types (e.g. ``int | None``) — pick the first non-None arg
-    if origin is type(None):
-        return None
-    args = get_args(annotation)
-    if args:
-        non_none = [a for a in args if a is not type(None)]
-        if non_none and non_none[0] in _ZERO_VALUES:
-            return _ZERO_VALUES[non_none[0]]
-    return None
-
-
-def _filter_fields(doc: Document, return_fields: list[str]) -> Document:
-    """Return a copy of doc with all fields not in return_fields set to their type-appropriate empty value.
-
-    Fields are set to their ``default_factory`` result (e.g. ``[]`` for list
-    fields), their ``default`` value, or a type-appropriate zero value for
-    required fields (``0`` for ``int``, ``""`` for ``str``, ``False`` for
-    ``bool``).
+def _filter_fields(doc: Document, return_fields: list[str]) -> dict[str, Any]:
+    """Return a dict containing only the requested fields from doc.
 
     Args:
         doc: The document to filter.
-        return_fields: Field names to preserve; all others are emptied.
+        return_fields: Field names to include.
 
     Returns:
-        A model_copy of the document with non-listed fields emptied.
+        Dict with only the requested fields that exist on the model.
     """
     all_fields = set(doc.__class__.model_fields)
-    to_update: dict[str, Any] = {}
-    for f in all_fields:
-        if f in return_fields:
-            continue
-        field_info = doc.__class__.model_fields[f]
-        if field_info.default_factory is not None:
-            to_update[f] = field_info.default_factory()  # type: ignore[call-arg]
-        elif field_info.default is not PydanticUndefined:
-            to_update[f] = field_info.default
-        else:
-            to_update[f] = _zero_value_for(field_info.annotation)
-    if not to_update:
-        return doc
-    return doc.model_copy(update=to_update)
+    return {f: getattr(doc, f) for f in return_fields if f in all_fields}
+
+
+def _compute_omitted_fields(doc: Document, return_fields: list[str]) -> list[str]:
+    """Return omitted field names plus a retrieval hint.
+
+    Args:
+        doc: The document being filtered.
+        return_fields: Field names that were included.
+
+    Returns:
+        Sorted list of omitted field names followed by _OMITTED_FIELDS_HINT,
+        or an empty list when all fields are included.
+    """
+    all_fields = set(doc.__class__.model_fields)
+    omitted = sorted(f for f in all_fields if f not in return_fields)
+    if omitted:
+        return omitted + [_OMITTED_FIELDS_HINT]
+    return []
 
 
 # ---------------------------------------------------------------------------
@@ -157,11 +135,12 @@ def list_documents(
     descending: bool = False,
     max_results: int = 10,
     return_fields: list[str] | None = ["id", "title", "created", "search_hit"],
-) -> ListResult[Document]:
+) -> ListResult[dict[str, Any]]:
     """List documents from paperless-ngx with optional filtering.
 
-    Only the fields listed in return_fields are populated; all others are set
-    to None before returning, keeping token usage low.
+    Only the fields listed in return_fields appear in each response item;
+    omitted fields are absent entirely. The top-level omitted_fields entry
+    lists which fields were excluded and how to retrieve them.
 
     Args:
         search: Search string applied according to search_mode.
@@ -215,13 +194,15 @@ def list_documents(
         page_size: Number of results per page. Default: 25.
         descending: Reverse the ordering direction. Default: False.
         max_results: Maximum number of documents to return. Default: 10.
-        return_fields: Document fields to include in the response. All others
-            are set to None. Defaults to the compact summary set ["id", "title", "created", "search_hit"].
-            Set to None if you want to receive the full set.
+        return_fields: Document fields to include in each response item. Omitted
+            fields are absent from the items entirely. Defaults to the compact
+            summary set ["id", "title", "created", "search_hit"]. Set to None
+            to use the default field set.
 
     Returns:
-        ListResult with count (total matching documents in paperless-ngx) and
-        items (Document objects with only return_fields populated).
+        ListResult with count (total matching documents in paperless-ngx),
+        items (dicts with only return_fields populated), and omitted_fields
+        (field names excluded from items, plus a retrieval hint).
     """
     if return_fields is None:
         return_fields = _LIST_RETURN_FIELDS
@@ -307,10 +288,10 @@ def list_documents(
     if page is not None:
         kwargs["page"] = page
     paged = client.documents.list(**kwargs)
-    return ListResult(
-        count=paged.count,
-        items=[_filter_fields(doc, return_fields) for doc in paged.results],
-    )
+    docs = paged.results
+    items = [_filter_fields(doc, return_fields) for doc in docs]
+    omitted = _compute_omitted_fields(docs[0], return_fields) if docs else []
+    return ListResult(count=paged.count, items=items, omitted_fields=omitted)
 
 
 @documents.tool
@@ -318,18 +299,20 @@ def get_document(
     id: int,
     include_metadata: bool = False,
     return_fields: list[str] | None = None,
-) -> Document:
+) -> dict[str, Any]:
     """Retrieve a single document by its ID with configurable field selection.
 
     Args:
         id: Numeric paperless-ngx document ID.
         include_metadata: When True, fetches extended file-level metadata
             concurrently and attaches it to the document. Default: False.
-        return_fields: Document fields to include in the response. All others
-            are set to None. Defaults to a rich detail set.
+        return_fields: Document fields to include in the response. Omitted
+            fields are absent from the result entirely. Defaults to a rich
+            detail set. Pass all field names explicitly to suppress omitted_fields.
 
     Returns:
-        The Document with only return_fields populated.
+        Dict with only return_fields populated, plus an omitted_fields entry
+        listing excluded field names and a retrieval hint when fields are omitted.
     """
     if return_fields is None:
         return_fields = _GET_RETURN_FIELDS
@@ -337,7 +320,11 @@ def get_document(
         return_fields = ["id"] + return_fields
     client = get_client()
     doc = client.documents.get(id=id, include_metadata=include_metadata)
-    return _filter_fields(doc, return_fields)
+    result = _filter_fields(doc, return_fields)
+    omitted = _compute_omitted_fields(doc, return_fields)
+    if omitted:
+        result["omitted_fields"] = omitted
+    return result
 
 
 @documents.tool

@@ -1,6 +1,6 @@
 # Feature Index
 
-**Next Available ID:** 0024
+**Next Available ID:** 0025
 
 | ID | Type | Name | Status | File |
 |----|------|------|--------|------|
@@ -27,3 +27,4 @@
 | 0021 | feature | Trash sub-server with full resource tool coverage | QA PASSED | [0021-feature-trash_subserver_and_tools.md](0021-feature-trash_subserver_and_tools.md) |
 | 0022 | bug | `Authorization: Bearer` header not supported — `mcp-remote` auth fails | QA PASSED | [0022-bug-authorization_bearer_header_not_supported.md](0022-bug-authorization_bearer_header_not_supported.md) |
 | 0023 | feature | Permission-based tool filtering — hide tools the authenticated user cannot use | OPEN | [0023-feature-permission_based_tool_filtering.md](0023-feature-permission_based_tool_filtering.md) |
+| 0024 | feature | Make omitted `return_fields` transparent to AI agents | QA PASSED | [0024-feature-omitted_fields_transparency.md](0024-feature-omitted_fields_transparency.md) |
