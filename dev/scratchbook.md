@@ -67,3 +67,5 @@ permission based tool filtering (0023) isn't implemented yet. i postponed it as 
 error:
 "There's a uv build issue with the Windows Store Python path. Let me check the current pyproject.toml state and try a cleaner approach."
 how to fix?
+
+potential improvement: add max results and modified filters to the history tool (even if underlying easypaperless method doesn't provide these filters)
