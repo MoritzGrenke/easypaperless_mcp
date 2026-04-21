@@ -23,6 +23,19 @@ from :data:`_request_token` and :data:`_request_url` ContextVars that are set
 by :class:`~easypaperless_mcp.server.CredentialMiddleware` before each tool
 call.  Unit tests mock :func:`get_client` directly and are unaffected by this
 mechanism.
+
+Retry configuration (server-side, optional):
+
+- ``PAPERLESS_RETRY_ATTEMPTS`` (int, default unset → library default of 0):
+  Maximum number of retry attempts after the first failure.  Set to a positive
+  integer to enable automatic retries for transient errors.
+- ``PAPERLESS_RETRY_BACKOFF`` (float, default unset → library default of 1.0):
+  Initial sleep in seconds between retry attempts; doubles exponentially on
+  each subsequent attempt.  Example: ``PAPERLESS_RETRY_ATTEMPTS=3`` with
+  ``PAPERLESS_RETRY_BACKOFF=2.0`` retries at 2 s, 4 s, and 8 s.
+
+Both values are read at import time.  Invalid values raise :exc:`RuntimeError`
+immediately on server startup.
 """
 
 import os
@@ -34,6 +47,28 @@ from easypaperless import SyncPaperlessClient
 # environment (e.g. Docker), it is used for every client and cannot be
 # overridden.  Leave it unset to let each client supply their own URL.
 SERVER_URL: str | None = os.environ.get("PAPERLESS_URL") or None
+
+# Retry configuration — parsed once at import time from optional env vars.
+_retry_attempts: int | None = None
+_retry_backoff: float | None = None
+
+_raw_retry_attempts = os.environ.get("PAPERLESS_RETRY_ATTEMPTS")
+if _raw_retry_attempts is not None:
+    try:
+        _retry_attempts = int(_raw_retry_attempts)
+    except ValueError:
+        raise RuntimeError(
+            f"PAPERLESS_RETRY_ATTEMPTS must be an integer, got: {_raw_retry_attempts!r}"
+        )
+
+_raw_retry_backoff = os.environ.get("PAPERLESS_RETRY_BACKOFF")
+if _raw_retry_backoff is not None:
+    try:
+        _retry_backoff = float(_raw_retry_backoff)
+    except ValueError:
+        raise RuntimeError(
+            f"PAPERLESS_RETRY_BACKOFF must be a float, got: {_raw_retry_backoff!r}"
+        )
 
 # Per-request ContextVars — set by CredentialMiddleware before each tool call.
 _request_token: ContextVar[str | None] = ContextVar("_request_token", default=None)
@@ -73,4 +108,9 @@ def get_client() -> SyncPaperlessClient:
             "    (or set PAPERLESS_URL in the server environment to lock it for all clients)"
         )
 
-    return SyncPaperlessClient(url=url, api_token=token)
+    kwargs: dict[str, object] = {}
+    if _retry_attempts is not None:
+        kwargs["retry_attempts"] = _retry_attempts
+    if _retry_backoff is not None:
+        kwargs["retry_backoff"] = _retry_backoff
+    return SyncPaperlessClient(url=url, api_token=token, **kwargs)

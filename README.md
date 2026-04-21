@@ -2,11 +2,12 @@
 
 MCP server for [paperless-ngx](https://docs.paperless-ngx.com/) built on top of the [easypaperless](https://pypi.org/project/easypaperless/) Python API wrapper.
 
-Exposes **59 tools** across 9 resource sub-servers so AI agents can read, search, create, update, and delete every major paperless-ngx resource.
+Exposes **60 tools** across 10 resource sub-servers so AI agents can read, search, create, update, and delete every major paperless-ngx resource.
 
 ## Features
 
 - **Documents** — list (with rich filtering), get, update, delete, upload, bulk operations, metadata
+- **Document History** — retrieve the full audit log for any document (who changed what and when)
 - **Document Notes** — list, create, delete per-document notes
 - **Tags** — full CRUD + bulk delete and bulk permissions
 - **Correspondents** — full CRUD + bulk delete and bulk permissions
@@ -121,6 +122,8 @@ The MCP server listens on port `8000` using the `streamable-http` transport.
 |----------|----------|-------------|
 | `PAPERLESS_URL` | no | Lock the paperless-ngx URL for all clients. If unset, each client supplies it. |
 | `MCP_TRANSPORT` | no | `stdio` (default) or `streamable-http` |
+| `PAPERLESS_RETRY_ATTEMPTS` | no | Maximum retry count after the first failure (integer, default: 0 — disabled). Set to a positive integer to enable automatic retries for transient errors. |
+| `PAPERLESS_RETRY_BACKOFF` | no | Initial sleep in seconds between retry attempts, doubling exponentially (float, default: 1.0). Only relevant when `PAPERLESS_RETRY_ATTEMPTS` > 0. |
 
 ## MCP Client Configuration
 

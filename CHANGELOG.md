@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.0] - 2026-04-21
 
+### Added
+
+#### Document History
+- `get_document_history` — retrieve the full audit log for a document, returning a paginated `ListResult[AuditLogEntry]`. Each entry records the timestamp, action type (`create`/`update`), a `changes` dict of before/after values, and the actor who performed the action. Supports `page` and `page_size` for pagination. Requires easypaperless ≥ 0.6.0.
+
+#### Infrastructure
+- `PAPERLESS_RETRY_ATTEMPTS` env var (server-side, optional): maximum retry count after the first failure. Set to a positive integer to enable automatic retries for transient errors. Default: disabled (0).
+- `PAPERLESS_RETRY_BACKOFF` env var (server-side, optional): initial sleep in seconds between retry attempts, doubling exponentially on each subsequent attempt. Example: `PAPERLESS_RETRY_ATTEMPTS=3` with `PAPERLESS_RETRY_BACKOFF=2.0` retries at 2 s, 4 s, 8 s. Default: 1.0 (library default, only relevant when attempts > 0). Invalid values raise `RuntimeError` at startup.
+- Bumped `easypaperless` dependency to `>=0.6.0`.
+
 ### Changed
 
 #### Documents (Breaking)

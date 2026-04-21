@@ -1,6 +1,6 @@
 # Feature Index
 
-**Next Available ID:** 0028
+**Next Available ID:** 0030
 
 | ID | Type | Name | Status | File |
 |----|------|------|--------|------|
@@ -31,3 +31,5 @@
 | 0025 | feature | Add `add_tags` / `remove_tags` parameters to `update_document` | DEPLOYED | [0025-feature-update_document_add_remove_tags.md](0025-feature-update_document_add_remove_tags.md) |
 | 0026 | refactoring | Separate `omitted_fields` hint into its own `omitted_fields_hint` field | DEPLOYED | [0026-refactoring-separate_omitted_fields_hint.md](0026-refactoring-separate_omitted_fields_hint.md) |
 | 0027 | feature | Filtered response for `update_document` with `return_fields` support | DEPLOYED | [0027-feature-update_document_filtered_response.md](0027-feature-update_document_filtered_response.md) |
+| 0028 | feature | Document history sub-server with `get_document_history` tool | DEPLOYED | [0028-feature-document_history_subserver.md](0028-feature-document_history_subserver.md) |
+| 0029 | maintenance | Expose retry config via server-side env vars | DEPLOYED | [0029-maintenance-retry_config_env_vars.md](0029-maintenance-retry_config_env_vars.md) |

@@ -1,5 +1,8 @@
 """Unit tests for credential resolution in client.py."""
 
+import importlib
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 import easypaperless_mcp.client as client_mod
@@ -97,3 +100,119 @@ def test_server_url_takes_precedence_over_contextvar(monkeypatch):
     c = get_client()
     assert c is not None
     assert _request_url.get() == "http://server-locked-url:8000"
+
+
+# ---------------------------------------------------------------------------
+# Retry configuration — get_client kwargs
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def reset_retry_globals():
+    """Restore module-level retry globals around each test."""
+    orig_attempts = client_mod._retry_attempts
+    orig_backoff = client_mod._retry_backoff
+    yield
+    client_mod._retry_attempts = orig_attempts
+    client_mod._retry_backoff = orig_backoff
+
+
+def test_get_client_passes_retry_attempts_when_set(monkeypatch):
+    _request_token.set("test-token")
+    _request_url.set("http://localhost:8000")
+    client_mod._retry_attempts = 3
+    client_mod._retry_backoff = None
+    mock_cls = MagicMock()
+    with patch("easypaperless_mcp.client.SyncPaperlessClient", mock_cls):
+        get_client()
+    mock_cls.assert_called_once_with(
+        url="http://localhost:8000", api_token="test-token", retry_attempts=3
+    )
+
+
+def test_get_client_passes_retry_backoff_when_set(monkeypatch):
+    _request_token.set("test-token")
+    _request_url.set("http://localhost:8000")
+    client_mod._retry_attempts = None
+    client_mod._retry_backoff = 2.0
+    mock_cls = MagicMock()
+    with patch("easypaperless_mcp.client.SyncPaperlessClient", mock_cls):
+        get_client()
+    mock_cls.assert_called_once_with(
+        url="http://localhost:8000", api_token="test-token", retry_backoff=2.0
+    )
+
+
+def test_get_client_passes_both_retry_params_when_set(monkeypatch):
+    _request_token.set("test-token")
+    _request_url.set("http://localhost:8000")
+    client_mod._retry_attempts = 3
+    client_mod._retry_backoff = 2.0
+    mock_cls = MagicMock()
+    with patch("easypaperless_mcp.client.SyncPaperlessClient", mock_cls):
+        get_client()
+    mock_cls.assert_called_once_with(
+        url="http://localhost:8000", api_token="test-token", retry_attempts=3, retry_backoff=2.0
+    )
+
+
+def test_get_client_omits_retry_kwargs_when_not_set(monkeypatch):
+    _request_token.set("test-token")
+    _request_url.set("http://localhost:8000")
+    client_mod._retry_attempts = None
+    client_mod._retry_backoff = None
+    mock_cls = MagicMock()
+    with patch("easypaperless_mcp.client.SyncPaperlessClient", mock_cls):
+        get_client()
+    mock_cls.assert_called_once_with(url="http://localhost:8000", api_token="test-token")
+
+
+# ---------------------------------------------------------------------------
+# Retry configuration — env var parsing (module reload)
+# ---------------------------------------------------------------------------
+
+
+def test_retry_attempts_parsed_from_env(monkeypatch):
+    monkeypatch.setenv("PAPERLESS_RETRY_ATTEMPTS", "5")
+    monkeypatch.delenv("PAPERLESS_RETRY_BACKOFF", raising=False)
+    importlib.reload(client_mod)
+    assert client_mod._retry_attempts == 5
+    assert client_mod._retry_backoff is None
+
+
+def test_retry_backoff_parsed_from_env(monkeypatch):
+    monkeypatch.delenv("PAPERLESS_RETRY_ATTEMPTS", raising=False)
+    monkeypatch.setenv("PAPERLESS_RETRY_BACKOFF", "1.5")
+    importlib.reload(client_mod)
+    assert client_mod._retry_attempts is None
+    assert client_mod._retry_backoff == 1.5
+
+
+def test_retry_both_parsed_from_env(monkeypatch):
+    monkeypatch.setenv("PAPERLESS_RETRY_ATTEMPTS", "3")
+    monkeypatch.setenv("PAPERLESS_RETRY_BACKOFF", "2.0")
+    importlib.reload(client_mod)
+    assert client_mod._retry_attempts == 3
+    assert client_mod._retry_backoff == 2.0
+
+
+def test_retry_neither_env_var_set(monkeypatch):
+    monkeypatch.delenv("PAPERLESS_RETRY_ATTEMPTS", raising=False)
+    monkeypatch.delenv("PAPERLESS_RETRY_BACKOFF", raising=False)
+    importlib.reload(client_mod)
+    assert client_mod._retry_attempts is None
+    assert client_mod._retry_backoff is None
+
+
+def test_invalid_retry_attempts_raises_runtime_error(monkeypatch):
+    monkeypatch.setenv("PAPERLESS_RETRY_ATTEMPTS", "not-an-int")
+    monkeypatch.delenv("PAPERLESS_RETRY_BACKOFF", raising=False)
+    with pytest.raises(RuntimeError, match="PAPERLESS_RETRY_ATTEMPTS"):
+        importlib.reload(client_mod)
+
+
+def test_invalid_retry_backoff_raises_runtime_error(monkeypatch):
+    monkeypatch.delenv("PAPERLESS_RETRY_ATTEMPTS", raising=False)
+    monkeypatch.setenv("PAPERLESS_RETRY_BACKOFF", "not-a-float")
+    with pytest.raises(RuntimeError, match="PAPERLESS_RETRY_BACKOFF"):
+        importlib.reload(client_mod)

@@ -58,3 +58,12 @@ the env parameter could be the user name. The server then looks up the permissio
 create update delete users / permissions seem to be blocked by anthropic. claude isn't allowed to perform any of these operations.
 idea: flag or env variable "dangerously-circument-user-and-permission-blocks" boolean. and add a codeword for user (that only the server owner knows) 
 no high prio.
+
+
+## 21.04. 
+ 
+permission based tool filtering (0023) isn't implemented yet. i postponed it as implementation seems difficult. i can't simply get permission from the used token.
+
+error:
+"There's a uv build issue with the Windows Store Python path. Let me check the current pyproject.toml state and try a cleaner approach."
+how to fix?

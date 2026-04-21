@@ -1,4 +1,4 @@
-# Tool Reference (59 tools)
+# Tool Reference (60 tools)
 
 ## `bulk_add_tag`
 
@@ -361,6 +361,16 @@ Retrieve file-level technical metadata for a document.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `id` | `integer` | yes |  |
+
+## `get_document_history`
+
+Retrieve the full audit log for a document.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | `integer` | yes | Numeric paperless-ngx document ID. |
+| `page` | `integer` | no | Page number to retrieve (1-based). Omit for the first page. |
+| `page_size` | `integer` | no | Number of entries per page. Omit to use the server default. |
 
 ## `get_document_type`
 

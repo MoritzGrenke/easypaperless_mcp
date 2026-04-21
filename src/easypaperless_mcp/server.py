@@ -9,6 +9,7 @@ from fastmcp.tools.tool import ToolResult
 from .client import SERVER_URL, _request_token, _request_url
 from .tools.correspondents import correspondents
 from .tools.custom_fields import custom_fields
+from .tools.document_history import document_history
 from .tools.document_notes import document_notes
 from .tools.document_types import document_types
 from .tools.documents import documents
@@ -84,6 +85,7 @@ class CredentialMiddleware(Middleware):
 
 mcp = FastMCP("easypaperless", middleware=[CredentialMiddleware()])
 mcp.mount(documents)
+mcp.mount(document_history)
 mcp.mount(document_notes)
 mcp.mount(tags)
 mcp.mount(correspondents)
