@@ -29,5 +29,5 @@
 | 0023 | feature | Permission-based tool filtering — hide tools the authenticated user cannot use | OPEN | [0023-feature-permission_based_tool_filtering.md](0023-feature-permission_based_tool_filtering.md) |
 | 0024 | feature | Make omitted `return_fields` transparent to AI agents | DEPLOYED | [0024-feature-omitted_fields_transparency.md](0024-feature-omitted_fields_transparency.md) |
 | 0025 | feature | Add `add_tags` / `remove_tags` parameters to `update_document` | DEPLOYED | [0025-feature-update_document_add_remove_tags.md](0025-feature-update_document_add_remove_tags.md) |
-| 0026 | refactoring | Separate `omitted_fields` hint into its own `omitted_fields_hint` field | IMPLEMENTED | [0026-refactoring-separate_omitted_fields_hint.md](0026-refactoring-separate_omitted_fields_hint.md) |
-| 0027 | feature | Filtered response for `update_document` with `return_fields` support | IMPLEMENTED | [0027-feature-update_document_filtered_response.md](0027-feature-update_document_filtered_response.md) |
+| 0026 | refactoring | Separate `omitted_fields` hint into its own `omitted_fields_hint` field | DEPLOYED | [0026-refactoring-separate_omitted_fields_hint.md](0026-refactoring-separate_omitted_fields_hint.md) |
+| 0027 | feature | Filtered response for `update_document` with `return_fields` support | DEPLOYED | [0027-feature-update_document_filtered_response.md](0027-feature-update_document_filtered_response.md) |
