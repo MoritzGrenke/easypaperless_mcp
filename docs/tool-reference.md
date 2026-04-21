@@ -595,6 +595,8 @@ Partially update a document (PATCH semantics).
 | `document_type` | `integer` | no |  |
 | `storage_path` | `integer` | no |  |
 | `tags` | `array` | no |  |
+| `add_tags` | `array` | no |  |
+| `remove_tags` | `array` | no |  |
 | `archive_serial_number` | `integer` | no |  |
 | `custom_fields` | `array` | no |  |
 | `owner` | `integer` | no |  |

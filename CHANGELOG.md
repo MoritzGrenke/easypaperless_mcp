@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-04-21
+
+### Changed
+
+#### Documents (Breaking)
+- `list_documents` items no longer contain keys for omitted fields — fields excluded via `return_fields` are now entirely absent from each item dict instead of being present as `null` or a zero value. Callers that relied on the full document shape being present (with nulls for unselected fields) must update their handling.
+- `get_document` response no longer contains keys for omitted fields — same behaviour as above for the single-document endpoint.
+
+#### Documents (Additive)
+- `list_documents` — `ListResult` now includes an `omitted_fields` list that names every field excluded by `return_fields` and appends a retrieval hint. Empty when all fields are included.
+- `get_document` — response dict now includes an `omitted_fields` key under the same conditions.
+- `update_document` — new `add_tags` and `remove_tags` parameters for incremental tag changes without knowing the document's current tag list. Both accept IDs or names (strings are resolved via the tags API). Mutually exclusive with the existing `tags` parameter.
+
+### Fixed
+
+- `update_document` — the existing `tags` docstring now prominently warns that it **overwrites all existing tags** and recommends `add_tags` / `remove_tags` for incremental changes.
+
 ## [0.2.0] - 2026-03-20
 
 ### Added

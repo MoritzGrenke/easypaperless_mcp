@@ -4,28 +4,28 @@
 
 | ID | Type | Name | Status | File |
 |----|------|------|--------|------|
-| 0001 | feature | Documents sub-server with full resource tool coverage | QA PASSED | [0001-feature-documents_subserver_and_tools.md](0001-feature-documents_subserver_and_tools.md) |
-| 0002 | feature | Full parameter coverage for list_documents tool | QA PASSED | [0002-feature-list_documents_full_parameter_coverage.md](0002-feature-list_documents_full_parameter_coverage.md) |
-| 0003 | bug | `return_fields` filtering sets non-nullable fields to None, breaking output validation | QA PASSED | [0003-bug-filter_fields_none_breaks_validation.md](0003-bug-filter_fields_none_breaks_validation.md) |
-| 0004 | bug | Documents tools have incomplete easypaperless API coverage | QA PASSED | [0004-bug-documents_tools_incomplete_api_coverage.md](0004-bug-documents_tools_incomplete_api_coverage.md) |
-| 0005 | feature | Tags sub-server with full resource tool coverage | QA PASSED | [0005-feature-tags_subserver_and_tools.md](0005-feature-tags_subserver_and_tools.md) |
-| 0006 | refactoring | Remove `clear_*` params from `update_document`, use `None` to clear nullable fields | QA PASSED | [0006-refactoring-remove_clear_params_from_update_document.md](0006-refactoring-remove_clear_params_from_update_document.md) |
-| 0007 | refactoring | Rename `document_id`/`document_ids` params to `id`/`ids` in documents tools | QA PASSED | [0007-refactoring-rename_document_id_params_to_id.md](0007-refactoring-rename_document_id_params_to_id.md) |
-| 0008 | feature | Correspondents sub-server with full resource tool coverage | QA PASSED | [0008-feature-correspondents_subserver_and_tools.md](0008-feature-correspondents_subserver_and_tools.md) |
-| 0009 | feature | Custom fields sub-server with full resource tool coverage | QA PASSED | [0009-feature-custom_fields_subserver_and_tools.md](0009-feature-custom_fields_subserver_and_tools.md) |
-| 0010 | feature | Document types sub-server with full resource tool coverage | QA PASSED | [0010-feature-document_types_subserver_and_tools.md](0010-feature-document_types_subserver_and_tools.md) |
-| 0011 | feature | Document notes sub-server with full resource tool coverage | QA PASSED | [0011-feature-document_notes_subserver_and_tools.md](0011-feature-document_notes_subserver_and_tools.md) |
-| 0012 | feature | Storage paths sub-server with full resource tool coverage | QA PASSED | [0012-feature-storage_paths_subserver_and_tools.md](0012-feature-storage_paths_subserver_and_tools.md) |
-| 0013 | maintenance | Migrate easypaperless_mcp to easypaperless 0.3.0 | QA PASSED | [0013-maintenance-migrate_to_easypaperless_0_3_0.md](0013-maintenance-migrate_to_easypaperless_0_3_0.md) |
-| 0014 | feature | Expose total count in list tool responses | QA PASSED | [0014-feature-list_tools_return_total_count.md](0014-feature-list_tools_return_total_count.md) |
-| 0015 | bug | `list_correspondents` fails with plain HTTP request on HTTPS instances | RESOLVED | [0015-bug-https_url_sends_plain_http.md](0015-bug-https_url_sends_plain_http.md) |
-| 0016 | maintenance | Migrate easypaperless_mcp to easypaperless 0.3.1 | QA PASSED | [0016-maintenance-migrate_to_easypaperless_0_3_1.md](0016-maintenance-migrate_to_easypaperless_0_3_1.md) |
-| 0017 | bug | `_filter_fields` sets required non-nullable fields to `None` when omitted from `return_fields` | QA PASSED | [0017-bug-filter_fields_fails_for_required_fields.md](0017-bug-filter_fields_fails_for_required_fields.md) |
-| 0018 | bug | Document notes tools registered twice, causing duplicate tool names | QA PASSED | [0018-bug-duplicate_document_notes_tools.md](0018-bug-duplicate_document_notes_tools.md) |
-| 0019 | feature | Client-side authentication credentials for secure MCP deployments | QA PASSED | [0019-feature-client_side_auth_credentials.md](0019-feature-client_side_auth_credentials.md) |
-| 0020 | feature | Users sub-server with full resource tool coverage | QA PASSED | [0020-feature-users_subserver_and_tools.md](0020-feature-users_subserver_and_tools.md) |
-| 0021 | feature | Trash sub-server with full resource tool coverage | QA PASSED | [0021-feature-trash_subserver_and_tools.md](0021-feature-trash_subserver_and_tools.md) |
-| 0022 | bug | `Authorization: Bearer` header not supported — `mcp-remote` auth fails | QA PASSED | [0022-bug-authorization_bearer_header_not_supported.md](0022-bug-authorization_bearer_header_not_supported.md) |
+| 0001 | feature | Documents sub-server with full resource tool coverage | DEPLOYED | [0001-feature-documents_subserver_and_tools.md](0001-feature-documents_subserver_and_tools.md) |
+| 0002 | feature | Full parameter coverage for list_documents tool | DEPLOYED | [0002-feature-list_documents_full_parameter_coverage.md](0002-feature-list_documents_full_parameter_coverage.md) |
+| 0003 | bug | `return_fields` filtering sets non-nullable fields to None, breaking output validation | DEPLOYED | [0003-bug-filter_fields_none_breaks_validation.md](0003-bug-filter_fields_none_breaks_validation.md) |
+| 0004 | bug | Documents tools have incomplete easypaperless API coverage | DEPLOYED | [0004-bug-documents_tools_incomplete_api_coverage.md](0004-bug-documents_tools_incomplete_api_coverage.md) |
+| 0005 | feature | Tags sub-server with full resource tool coverage | DEPLOYED | [0005-feature-tags_subserver_and_tools.md](0005-feature-tags_subserver_and_tools.md) |
+| 0006 | refactoring | Remove `clear_*` params from `update_document`, use `None` to clear nullable fields | DEPLOYED | [0006-refactoring-remove_clear_params_from_update_document.md](0006-refactoring-remove_clear_params_from_update_document.md) |
+| 0007 | refactoring | Rename `document_id`/`document_ids` params to `id`/`ids` in documents tools | DEPLOYED | [0007-refactoring-rename_document_id_params_to_id.md](0007-refactoring-rename_document_id_params_to_id.md) |
+| 0008 | feature | Correspondents sub-server with full resource tool coverage | DEPLOYED | [0008-feature-correspondents_subserver_and_tools.md](0008-feature-correspondents_subserver_and_tools.md) |
+| 0009 | feature | Custom fields sub-server with full resource tool coverage | DEPLOYED | [0009-feature-custom_fields_subserver_and_tools.md](0009-feature-custom_fields_subserver_and_tools.md) |
+| 0010 | feature | Document types sub-server with full resource tool coverage | DEPLOYED | [0010-feature-document_types_subserver_and_tools.md](0010-feature-document_types_subserver_and_tools.md) |
+| 0011 | feature | Document notes sub-server with full resource tool coverage | DEPLOYED | [0011-feature-document_notes_subserver_and_tools.md](0011-feature-document_notes_subserver_and_tools.md) |
+| 0012 | feature | Storage paths sub-server with full resource tool coverage | DEPLOYED | [0012-feature-storage_paths_subserver_and_tools.md](0012-feature-storage_paths_subserver_and_tools.md) |
+| 0013 | maintenance | Migrate easypaperless_mcp to easypaperless 0.3.0 | DEPLOYED | [0013-maintenance-migrate_to_easypaperless_0_3_0.md](0013-maintenance-migrate_to_easypaperless_0_3_0.md) |
+| 0014 | feature | Expose total count in list tool responses | DEPLOYED | [0014-feature-list_tools_return_total_count.md](0014-feature-list_tools_return_total_count.md) |
+| 0015 | bug | `list_correspondents` fails with plain HTTP request on HTTPS instances | DEPLOYED | [0015-bug-https_url_sends_plain_http.md](0015-bug-https_url_sends_plain_http.md) |
+| 0016 | maintenance | Migrate easypaperless_mcp to easypaperless 0.3.1 | DEPLOYED | [0016-maintenance-migrate_to_easypaperless_0_3_1.md](0016-maintenance-migrate_to_easypaperless_0_3_1.md) |
+| 0017 | bug | `_filter_fields` sets required non-nullable fields to `None` when omitted from `return_fields` | DEPLOYED | [0017-bug-filter_fields_fails_for_required_fields.md](0017-bug-filter_fields_fails_for_required_fields.md) |
+| 0018 | bug | Document notes tools registered twice, causing duplicate tool names | DEPLOYED | [0018-bug-duplicate_document_notes_tools.md](0018-bug-duplicate_document_notes_tools.md) |
+| 0019 | feature | Client-side authentication credentials for secure MCP deployments | DEPLOYED | [0019-feature-client_side_auth_credentials.md](0019-feature-client_side_auth_credentials.md) |
+| 0020 | feature | Users sub-server with full resource tool coverage | DEPLOYED | [0020-feature-users_subserver_and_tools.md](0020-feature-users_subserver_and_tools.md) |
+| 0021 | feature | Trash sub-server with full resource tool coverage | DEPLOYED | [0021-feature-trash_subserver_and_tools.md](0021-feature-trash_subserver_and_tools.md) |
+| 0022 | bug | `Authorization: Bearer` header not supported — `mcp-remote` auth fails | DEPLOYED | [0022-bug-authorization_bearer_header_not_supported.md](0022-bug-authorization_bearer_header_not_supported.md) |
 | 0023 | feature | Permission-based tool filtering — hide tools the authenticated user cannot use | OPEN | [0023-feature-permission_based_tool_filtering.md](0023-feature-permission_based_tool_filtering.md) |
-| 0024 | feature | Make omitted `return_fields` transparent to AI agents | QA PASSED | [0024-feature-omitted_fields_transparency.md](0024-feature-omitted_fields_transparency.md) |
-| 0025 | feature | Add `add_tags` / `remove_tags` parameters to `update_document` | QA PASSED | [0025-feature-update_document_add_remove_tags.md](0025-feature-update_document_add_remove_tags.md) |
+| 0024 | feature | Make omitted `return_fields` transparent to AI agents | DEPLOYED | [0024-feature-omitted_fields_transparency.md](0024-feature-omitted_fields_transparency.md) |
+| 0025 | feature | Add `add_tags` / `remove_tags` parameters to `update_document` | DEPLOYED | [0025-feature-update_document_add_remove_tags.md](0025-feature-update_document_add_remove_tags.md) |
