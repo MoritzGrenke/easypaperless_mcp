@@ -106,11 +106,19 @@ Copy `.env.example` to `.env`:
 MCP_TRANSPORT=streamable-http
 ```
 
-Then start the server:
+### Option A — Build from source
 
 ```bash
 docker compose up --build
 ```
+
+### Option B — Use the pre-built image from GHCR
+
+```bash
+docker compose -f docker-compose.ghcr.yml up
+```
+
+This pulls `ghcr.io/moritzgrenke/easypaperless_mcp:latest` directly — no local build required.
 
 The MCP server listens on port `8000` using the `streamable-http` transport.
 
