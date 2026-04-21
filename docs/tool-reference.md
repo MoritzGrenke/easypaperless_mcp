@@ -602,6 +602,7 @@ Partially update a document (PATCH semantics).
 | `owner` | `integer` | no |  |
 | `set_permissions` | `object` | no |  |
 | `remove_inbox_tags` | `boolean` | no |  |
+| `return_fields` | `array` | no |  |
 
 ## `update_document_type`
 

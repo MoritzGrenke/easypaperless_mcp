@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+#### Documents (Breaking)
+- `list_documents` and `get_document` — `omitted_fields` now contains **only field name strings**. The retrieval hint is no longer appended as the last element of the list. Callers that read the final element of `omitted_fields` as the hint must switch to the new `omitted_fields_hint` field.
+
+#### Documents (Additive)
+- `list_documents` (`ListResult`) and `get_document` — new `omitted_fields_hint` field (string) carries the retrieval hint separately from `omitted_fields`. Present whenever one or more fields are omitted; empty string otherwise.
+- `update_document` — new `return_fields: list[str] | None` parameter. Defaults to a smart set containing `id`, `modified`, and every field explicitly provided in the call. Explicit `return_fields` overrides the default entirely; `id` is always included. Response is now a filtered dict instead of the full `Document` model, with `omitted_fields` and `omitted_fields_hint` metadata following the same contract as `get_document`.
+
+---
+
 ## [0.3.0] - 2026-04-21
 
 ### Changed
