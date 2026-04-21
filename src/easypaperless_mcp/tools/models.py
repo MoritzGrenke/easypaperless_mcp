@@ -17,11 +17,13 @@ class ListResult(BaseModel, Generic[T]):
             accurate counts to users.
         items: The resource objects returned for the requested page / all
             fetched pages.
-        omitted_fields: Field names excluded from items due to return_fields
-            filtering, plus a retrieval hint as the last element. Empty when
-            all fields are included.
+        omitted_fields: Names of fields excluded from items due to
+            ``return_fields`` filtering. Empty when all fields are included.
+        omitted_fields_hint: Human-readable hint explaining how to retrieve
+            the omitted fields. Empty string when no fields are omitted.
     """
 
     count: int
     items: List[T]
     omitted_fields: list[str] = []
+    omitted_fields_hint: str = ""

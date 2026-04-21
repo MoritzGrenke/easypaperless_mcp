@@ -74,13 +74,13 @@ def test_filter_fields_unknown_field_silently_skipped() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_compute_omitted_fields_returns_omitted_names_and_hint() -> None:
+def test_compute_omitted_fields_returns_only_field_names() -> None:
     doc = make_document(id=1, correspondent=5)
     omitted = _compute_omitted_fields(doc, ["id", "title"])
     all_fields = set(doc.__class__.model_fields)
     expected_names = sorted(f for f in all_fields if f not in {"id", "title"})
-    assert omitted[:-1] == expected_names
-    assert omitted[-1] == _OMITTED_FIELDS_HINT
+    assert omitted == expected_names
+    assert _OMITTED_FIELDS_HINT not in omitted
 
 
 def test_compute_omitted_fields_empty_when_all_included() -> None:
@@ -90,10 +90,10 @@ def test_compute_omitted_fields_empty_when_all_included() -> None:
     assert omitted == []
 
 
-def test_compute_omitted_fields_hint_is_last_element() -> None:
+def test_compute_omitted_fields_no_hint_in_list() -> None:
     doc = make_document()
     omitted = _compute_omitted_fields(doc, ["id"])
-    assert omitted[-1] == _OMITTED_FIELDS_HINT
+    assert _OMITTED_FIELDS_HINT not in omitted
 
 
 # ---------------------------------------------------------------------------
@@ -278,23 +278,25 @@ def test_list_documents_return_fields_omitting_id_and_title(patch_get_client: Ma
 
 
 def test_list_documents_omitted_fields_on_result(patch_get_client: MagicMock) -> None:
-    """omitted_fields on ListResult lists excluded field names plus hint."""
+    """omitted_fields lists excluded field names; hint is in omitted_fields_hint."""
     patch_get_client.documents.list.return_value = MagicMock(
         count=1, results=[make_document(id=1, content="text")]
     )
     result = list_documents(return_fields=["id", "title"])
-    assert len(result.omitted_fields) > 1
+    assert len(result.omitted_fields) > 0
     assert "content" in result.omitted_fields
-    assert result.omitted_fields[-1] == _OMITTED_FIELDS_HINT
+    assert _OMITTED_FIELDS_HINT not in result.omitted_fields
+    assert result.omitted_fields_hint == _OMITTED_FIELDS_HINT
 
 
 def test_list_documents_omitted_fields_empty_when_all_fields_included(patch_get_client: MagicMock) -> None:
-    """omitted_fields is empty when all model fields are requested."""
+    """omitted_fields is empty and hint is empty when all model fields are requested."""
     doc = make_document()
     all_fields = list(doc.__class__.model_fields.keys())
     patch_get_client.documents.list.return_value = MagicMock(count=1, results=[doc])
     result = list_documents(return_fields=all_fields)
     assert result.omitted_fields == []
+    assert result.omitted_fields_hint == ""
 
 
 def test_list_documents_omitted_fields_empty_for_empty_results(patch_get_client: MagicMock) -> None:
@@ -302,6 +304,7 @@ def test_list_documents_omitted_fields_empty_for_empty_results(patch_get_client:
     patch_get_client.documents.list.return_value = MagicMock(count=0, results=[])
     result = list_documents(return_fields=["id"])
     assert result.omitted_fields == []
+    assert result.omitted_fields_hint == ""
 
 
 def test_list_documents_passes_ids(patch_get_client: MagicMock) -> None:
@@ -471,21 +474,23 @@ def test_get_document_default_return_fields_preserves_get_fields(patch_get_clien
 
 
 def test_get_document_includes_omitted_fields_metadata(patch_get_client: MagicMock) -> None:
-    """omitted_fields key lists excluded fields and the retrieval hint."""
+    """omitted_fields lists excluded field names; hint is in omitted_fields_hint."""
     patch_get_client.documents.get.return_value = make_document(id=1, content="text")
     result = get_document(1, return_fields=["id", "title"])
     assert "omitted_fields" in result
     assert "content" in result["omitted_fields"]
-    assert result["omitted_fields"][-1] == _OMITTED_FIELDS_HINT
+    assert _OMITTED_FIELDS_HINT not in result["omitted_fields"]
+    assert result["omitted_fields_hint"] == _OMITTED_FIELDS_HINT
 
 
 def test_get_document_no_omitted_fields_when_all_requested(patch_get_client: MagicMock) -> None:
-    """omitted_fields is absent when all model fields are requested."""
+    """omitted_fields and omitted_fields_hint are absent when all model fields are requested."""
     doc = make_document(id=1)
     all_fields = list(doc.__class__.model_fields.keys())
     patch_get_client.documents.get.return_value = doc
     result = get_document(1, return_fields=all_fields)
     assert "omitted_fields" not in result
+    assert "omitted_fields_hint" not in result
 
 
 # ---------------------------------------------------------------------------
@@ -858,6 +863,101 @@ def test_update_document_tags_direct_override_still_works(patch_get_client: Magi
     update_document(1, tags=[10, 20])
     patch_get_client.documents.get.assert_not_called()
     assert patch_get_client.documents.update.call_args.kwargs["tags"] == [10, 20]
+
+
+# ---------------------------------------------------------------------------
+# update_document — filtered response (issue 0027)
+# ---------------------------------------------------------------------------
+
+
+def test_update_document_returns_dict(patch_get_client: MagicMock) -> None:
+    """update_document returns a dict, not a Document model."""
+    patch_get_client.documents.update.return_value = make_document(id=1, title="T")
+    result = update_document(1, title="T")
+    assert isinstance(result, dict)
+
+
+def test_update_document_default_always_includes_id_and_modified(patch_get_client: MagicMock) -> None:
+    """Default response always contains id and modified."""
+    patch_get_client.documents.update.return_value = make_document(id=5)
+    result = update_document(5)
+    assert result["id"] == 5
+    assert "modified" in result
+
+
+def test_update_document_default_includes_updated_field(patch_get_client: MagicMock) -> None:
+    """Default response includes each field that was explicitly updated."""
+    patch_get_client.documents.update.return_value = make_document(id=1, title="New", correspondent=3)
+    result = update_document(1, title="New", correspondent=3)
+    assert result["title"] == "New"
+    assert result["correspondent"] == 3
+
+
+def test_update_document_default_excludes_non_updated_fields(patch_get_client: MagicMock) -> None:
+    """Default response excludes fields that were not part of the update."""
+    patch_get_client.documents.update.return_value = make_document(id=1, title="X", content="long text")
+    result = update_document(1, title="X")
+    assert "content" not in result
+    assert "storage_path" not in result
+
+
+def test_update_document_default_includes_tags_when_tags_updated(patch_get_client: MagicMock) -> None:
+    """Default response includes tags when any tag param is provided."""
+    patch_get_client.documents.update.return_value = make_document(id=1, tags=[5])
+    result = update_document(1, tags=[5])
+    assert "tags" in result
+
+
+def test_update_document_default_includes_tags_when_add_tags_used(patch_get_client: MagicMock) -> None:
+    """Default response includes tags when add_tags is provided."""
+    patch_get_client.documents.get.return_value = make_document(id=1, tags=[3])
+    patch_get_client.documents.update.return_value = make_document(id=1, tags=[3, 5])
+    result = update_document(1, add_tags=[5])
+    assert "tags" in result
+
+
+def test_update_document_default_includes_tags_when_remove_inbox_tags_used(patch_get_client: MagicMock) -> None:
+    """Default response includes tags when remove_inbox_tags is provided."""
+    patch_get_client.documents.update.return_value = make_document(id=1, tags=[])
+    result = update_document(1, remove_inbox_tags=True)
+    assert "tags" in result
+
+
+def test_update_document_explicit_return_fields_overrides_default(patch_get_client: MagicMock) -> None:
+    """Explicit return_fields overrides smart default entirely."""
+    patch_get_client.documents.update.return_value = make_document(id=1, title="X", content="text")
+    result = update_document(1, title="X", return_fields=["id", "content"])
+    assert result["id"] == 1
+    assert result["content"] == "text"
+    assert "title" not in result
+    assert "modified" not in result
+
+
+def test_update_document_id_always_present_in_explicit_return_fields(patch_get_client: MagicMock) -> None:
+    """id is silently added when not in explicit return_fields."""
+    patch_get_client.documents.update.return_value = make_document(id=7, title="T")
+    result = update_document(7, title="T", return_fields=["title"])
+    assert result["id"] == 7
+
+
+def test_update_document_omitted_fields_present_when_fields_omitted(patch_get_client: MagicMock) -> None:
+    """omitted_fields and omitted_fields_hint present when fields are omitted."""
+    patch_get_client.documents.update.return_value = make_document(id=1, title="T")
+    result = update_document(1, title="T")
+    assert "omitted_fields" in result
+    assert "content" in result["omitted_fields"]
+    assert _OMITTED_FIELDS_HINT not in result["omitted_fields"]
+    assert result["omitted_fields_hint"] == _OMITTED_FIELDS_HINT
+
+
+def test_update_document_omitted_fields_absent_when_all_fields_requested(patch_get_client: MagicMock) -> None:
+    """omitted_fields and omitted_fields_hint absent when all fields requested."""
+    doc = make_document(id=1, title="T")
+    all_fields = list(doc.__class__.model_fields.keys())
+    patch_get_client.documents.update.return_value = doc
+    result = update_document(1, title="T", return_fields=all_fields)
+    assert "omitted_fields" not in result
+    assert "omitted_fields_hint" not in result
 
 
 # ---------------------------------------------------------------------------

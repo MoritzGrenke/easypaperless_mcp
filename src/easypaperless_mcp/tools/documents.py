@@ -57,21 +57,19 @@ def _filter_fields(doc: Document, return_fields: list[str]) -> dict[str, Any]:
 
 
 def _compute_omitted_fields(doc: Document, return_fields: list[str]) -> list[str]:
-    """Return omitted field names plus a retrieval hint.
+    """Return the sorted list of field names excluded by return_fields.
 
     Args:
         doc: The document being filtered.
         return_fields: Field names that were included.
 
     Returns:
-        Sorted list of omitted field names followed by _OMITTED_FIELDS_HINT,
-        or an empty list when all fields are included.
+        Sorted list of omitted field names, or an empty list when all fields
+        are included. The retrieval hint is **not** included — callers should
+        populate ``omitted_fields_hint`` separately using ``_OMITTED_FIELDS_HINT``.
     """
     all_fields = set(doc.__class__.model_fields)
-    omitted = sorted(f for f in all_fields if f not in return_fields)
-    if omitted:
-        return omitted + [_OMITTED_FIELDS_HINT]
-    return []
+    return sorted(f for f in all_fields if f not in return_fields)
 
 
 def _resolve_tag_ids(client: SyncPaperlessClient, tags: list[int | str]) -> set[int]:
@@ -223,8 +221,9 @@ def list_documents(
 
     Returns:
         ListResult with count (total matching documents in paperless-ngx),
-        items (dicts with only return_fields populated), and omitted_fields
-        (field names excluded from items, plus a retrieval hint).
+        items (dicts with only return_fields populated), omitted_fields
+        (field names excluded from items), and omitted_fields_hint
+        (retrieval hint, non-empty when fields are omitted).
     """
     if return_fields is None:
         return_fields = _LIST_RETURN_FIELDS
@@ -313,7 +312,12 @@ def list_documents(
     docs = paged.results
     items = [_filter_fields(doc, return_fields) for doc in docs]
     omitted = _compute_omitted_fields(docs[0], return_fields) if docs else []
-    return ListResult(count=paged.count, items=items, omitted_fields=omitted)
+    return ListResult(
+        count=paged.count,
+        items=items,
+        omitted_fields=omitted,
+        omitted_fields_hint=_OMITTED_FIELDS_HINT if omitted else "",
+    )
 
 
 @documents.tool
@@ -333,8 +337,9 @@ def get_document(
             detail set. Pass all field names explicitly to suppress omitted_fields.
 
     Returns:
-        Dict with only return_fields populated, plus an omitted_fields entry
-        listing excluded field names and a retrieval hint when fields are omitted.
+        Dict with only return_fields populated. When fields are omitted,
+        also contains omitted_fields (list of excluded field names) and
+        omitted_fields_hint (retrieval hint string).
     """
     if return_fields is None:
         return_fields = _GET_RETURN_FIELDS
@@ -346,6 +351,7 @@ def get_document(
     omitted = _compute_omitted_fields(doc, return_fields)
     if omitted:
         result["omitted_fields"] = omitted
+        result["omitted_fields_hint"] = _OMITTED_FIELDS_HINT
     return result
 
 
@@ -384,12 +390,20 @@ def update_document(
     owner: int | None = _UNSET,
     set_permissions: SetPermissions | None = None,
     remove_inbox_tags: bool | None = None,
-) -> Document:
+    return_fields: list[str] | None = None,
+) -> dict[str, Any]:
     """Partially update a document (PATCH semantics).
 
     Only fields that are explicitly provided are sent to the API. Omitting a
     field leaves it unchanged on the server. Passing None for a nullable field
     clears it (removes the assigned value).
+
+    By default the response contains only ``id``, ``modified``, and each field
+    that was explicitly updated in this call — nothing else. Pass
+    ``return_fields`` to override: the response will then contain exactly those
+    fields (plus ``id`` which is always present). Fields not included are
+    absent from the response entirely. ``omitted_fields`` and
+    ``omitted_fields_hint`` are added when one or more fields are omitted.
 
     Args:
         id: Numeric ID of the document to update.
@@ -422,9 +436,13 @@ def update_document(
             unchanged, or pass None to clear.
         set_permissions: Explicit view/change permission sets.
         remove_inbox_tags: When True, removes all inbox tags from the document.
+        return_fields: Document fields to include in the response. When omitted,
+            defaults to id + modified + every field explicitly updated in this
+            call. Pass all field names explicitly to suppress omitted_fields.
 
     Returns:
-        The updated Document.
+        Dict containing the requested fields of the updated document, plus
+        omitted_fields and omitted_fields_hint when fields are omitted.
     """
     if tags is not None and (add_tags is not None or remove_tags is not None):
         raise ValueError(
@@ -480,7 +498,40 @@ def update_document(
     if remove_inbox_tags is not None:
         kwargs["remove_inbox_tags"] = remove_inbox_tags
 
-    return client.documents.update(id, **kwargs)
+    # Resolve return_fields: explicit override or smart default
+    if return_fields is None:
+        smart: list[str] = ["id", "modified"]
+        if title is not None:
+            smart.append("title")
+        if content is not None:
+            smart.append("content")
+        if created is not None:
+            smart.append("created")
+        if correspondent is not UNSET:  # type: ignore[comparison-overlap]
+            smart.append("correspondent")
+        if document_type is not UNSET:  # type: ignore[comparison-overlap]
+            smart.append("document_type")
+        if storage_path is not UNSET:  # type: ignore[comparison-overlap]
+            smart.append("storage_path")
+        if tags is not None or add_tags is not None or remove_tags is not None or remove_inbox_tags is not None:
+            smart.append("tags")
+        if archive_serial_number is not UNSET:  # type: ignore[comparison-overlap]
+            smart.append("archive_serial_number")
+        if custom_fields is not None:
+            smart.append("custom_fields")
+        if owner is not UNSET:  # type: ignore[comparison-overlap]
+            smart.append("owner")
+        return_fields = smart
+    elif "id" not in return_fields:
+        return_fields = ["id"] + return_fields
+
+    doc = client.documents.update(id, **kwargs)
+    result = _filter_fields(doc, return_fields)
+    omitted = _compute_omitted_fields(doc, return_fields)
+    if omitted:
+        result["omitted_fields"] = omitted
+        result["omitted_fields_hint"] = _OMITTED_FIELDS_HINT
+    return result
 
 
 @documents.tool
