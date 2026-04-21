@@ -8,6 +8,7 @@ from easypaperless_mcp.tools.documents import (
     _OMITTED_FIELDS_HINT,
     _compute_omitted_fields,
     _filter_fields,
+    _resolve_tag_ids,
     bulk_add_tag,
     bulk_delete_documents,
     bulk_modify_custom_fields,
@@ -93,6 +94,54 @@ def test_compute_omitted_fields_hint_is_last_element() -> None:
     doc = make_document()
     omitted = _compute_omitted_fields(doc, ["id"])
     assert omitted[-1] == _OMITTED_FIELDS_HINT
+
+
+# ---------------------------------------------------------------------------
+# _resolve_tag_ids
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_tag_ids_integers_pass_through(patch_get_client: MagicMock) -> None:
+    result = _resolve_tag_ids(patch_get_client, [1, 2, 3])
+    assert result == {1, 2, 3}
+    patch_get_client.tags.list.assert_not_called()
+
+
+def test_resolve_tag_ids_string_resolved_via_tags_api(patch_get_client: MagicMock) -> None:
+    tag = MagicMock()
+    tag.id = 5
+    patch_get_client.tags.list.return_value = MagicMock(results=[tag])
+    result = _resolve_tag_ids(patch_get_client, ["inbox"])
+    patch_get_client.tags.list.assert_called_once_with(name_exact="inbox")
+    assert result == {5}
+
+
+def test_resolve_tag_ids_unresolved_name_silently_ignored(patch_get_client: MagicMock) -> None:
+    patch_get_client.tags.list.return_value = MagicMock(results=[])
+    result = _resolve_tag_ids(patch_get_client, ["nonexistent"])
+    assert result == set()
+
+
+def test_resolve_tag_ids_mixed_int_and_string(patch_get_client: MagicMock) -> None:
+    tag = MagicMock()
+    tag.id = 7
+    patch_get_client.tags.list.return_value = MagicMock(results=[tag])
+    result = _resolve_tag_ids(patch_get_client, [3, "urgent"])
+    assert result == {3, 7}
+
+
+def test_resolve_tag_ids_multiple_strings_makes_one_call_per_name(patch_get_client: MagicMock) -> None:
+    tag_a = MagicMock()
+    tag_a.id = 10
+    tag_b = MagicMock()
+    tag_b.id = 20
+    patch_get_client.tags.list.side_effect = [
+        MagicMock(results=[tag_a]),
+        MagicMock(results=[tag_b]),
+    ]
+    result = _resolve_tag_ids(patch_get_client, ["alpha", "beta"])
+    assert result == {10, 20}
+    assert patch_get_client.tags.list.call_count == 2
 
 
 # ---------------------------------------------------------------------------
@@ -734,6 +783,81 @@ def test_update_document_omits_set_permissions_when_not_provided(patch_get_clien
     patch_get_client.documents.update.return_value = make_document(id=1)
     update_document(1, title="X")
     assert "set_permissions" not in patch_get_client.documents.update.call_args.kwargs
+
+
+def test_update_document_add_tags_merges_with_existing(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.get.return_value = make_document(id=1, tags=[3, 5])
+    patch_get_client.documents.update.return_value = make_document(id=1, tags=[3, 5, 7])
+    update_document(1, add_tags=[7])
+    patch_get_client.documents.get.assert_called_once_with(id=1)
+    assert patch_get_client.documents.update.call_args.kwargs["tags"] == [3, 5, 7]
+
+
+def test_update_document_add_tags_deduplicates(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.get.return_value = make_document(id=1, tags=[3, 5])
+    patch_get_client.documents.update.return_value = make_document(id=1, tags=[3, 5])
+    update_document(1, add_tags=[5])
+    assert patch_get_client.documents.update.call_args.kwargs["tags"] == [3, 5]
+
+
+def test_update_document_remove_tags_filters_existing(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.get.return_value = make_document(id=1, tags=[3, 5, 7])
+    patch_get_client.documents.update.return_value = make_document(id=1, tags=[3, 7])
+    update_document(1, remove_tags=[5])
+    patch_get_client.documents.get.assert_called_once_with(id=1)
+    assert patch_get_client.documents.update.call_args.kwargs["tags"] == [3, 7]
+
+
+def test_update_document_add_and_remove_tags_combined(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.get.return_value = make_document(id=1, tags=[3, 5])
+    patch_get_client.documents.update.return_value = make_document(id=1, tags=[3, 9])
+    update_document(1, add_tags=[9], remove_tags=[5])
+    assert patch_get_client.documents.update.call_args.kwargs["tags"] == [3, 9]
+
+
+def test_update_document_add_remove_tags_fetches_document_once(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.get.return_value = make_document(id=1, tags=[1, 2])
+    patch_get_client.documents.update.return_value = make_document(id=1)
+    update_document(1, add_tags=[3], remove_tags=[1])
+    patch_get_client.documents.get.assert_called_once_with(id=1)
+
+
+def test_update_document_tags_and_add_tags_raises(patch_get_client: MagicMock) -> None:
+    import pytest
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        update_document(1, tags=[1, 2], add_tags=[3])
+
+
+def test_update_document_tags_and_remove_tags_raises(patch_get_client: MagicMock) -> None:
+    import pytest
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        update_document(1, tags=[1], remove_tags=[2])
+
+
+def test_update_document_remove_tags_by_name_resolves_ids(patch_get_client: MagicMock) -> None:
+    tag = MagicMock()
+    tag.id = 5
+    patch_get_client.tags.list.return_value = MagicMock(results=[tag])
+    patch_get_client.documents.get.return_value = make_document(id=1, tags=[3, 5, 7])
+    patch_get_client.documents.update.return_value = make_document(id=1, tags=[3, 7])
+    update_document(1, remove_tags=["inbox"])
+    patch_get_client.tags.list.assert_called_once_with(name_exact="inbox")
+    assert patch_get_client.documents.update.call_args.kwargs["tags"] == [3, 7]
+
+
+def test_update_document_remove_tags_unresolved_name_leaves_list_unchanged(patch_get_client: MagicMock) -> None:
+    patch_get_client.tags.list.return_value = MagicMock(results=[])
+    patch_get_client.documents.get.return_value = make_document(id=1, tags=[3, 5])
+    patch_get_client.documents.update.return_value = make_document(id=1, tags=[3, 5])
+    update_document(1, remove_tags=["ghost"])
+    assert patch_get_client.documents.update.call_args.kwargs["tags"] == [3, 5]
+
+
+def test_update_document_tags_direct_override_still_works(patch_get_client: MagicMock) -> None:
+    patch_get_client.documents.update.return_value = make_document(id=1, tags=[10, 20])
+    update_document(1, tags=[10, 20])
+    patch_get_client.documents.get.assert_not_called()
+    assert patch_get_client.documents.update.call_args.kwargs["tags"] == [10, 20]
 
 
 # ---------------------------------------------------------------------------

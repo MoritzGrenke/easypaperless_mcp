@@ -1,6 +1,6 @@
 # Feature Index
 
-**Next Available ID:** 0025
+**Next Available ID:** 0026
 
 | ID | Type | Name | Status | File |
 |----|------|------|--------|------|
@@ -28,3 +28,4 @@
 | 0022 | bug | `Authorization: Bearer` header not supported — `mcp-remote` auth fails | QA PASSED | [0022-bug-authorization_bearer_header_not_supported.md](0022-bug-authorization_bearer_header_not_supported.md) |
 | 0023 | feature | Permission-based tool filtering — hide tools the authenticated user cannot use | OPEN | [0023-feature-permission_based_tool_filtering.md](0023-feature-permission_based_tool_filtering.md) |
 | 0024 | feature | Make omitted `return_fields` transparent to AI agents | QA PASSED | [0024-feature-omitted_fields_transparency.md](0024-feature-omitted_fields_transparency.md) |
+| 0025 | feature | Add `add_tags` / `remove_tags` parameters to `update_document` | QA PASSED | [0025-feature-update_document_add_remove_tags.md](0025-feature-update_document_add_remove_tags.md) |

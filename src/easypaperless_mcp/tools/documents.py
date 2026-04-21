@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from easypaperless import UNSET, Document, DocumentMetadata, SetPermissions
+from easypaperless import UNSET, Document, DocumentMetadata, SetPermissions, SyncPaperlessClient
 from fastmcp import FastMCP
 
 from ..client import get_client
@@ -72,6 +72,28 @@ def _compute_omitted_fields(doc: Document, return_fields: list[str]) -> list[str
     if omitted:
         return omitted + [_OMITTED_FIELDS_HINT]
     return []
+
+
+def _resolve_tag_ids(client: SyncPaperlessClient, tags: list[int | str]) -> set[int]:
+    """Resolve a mixed list of tag IDs and names to a set of integer IDs.
+
+    Integers pass through unchanged. Each string is looked up by exact name via
+    a ``tags.list(name_exact=...)`` call. Names that do not match any tag are
+    silently ignored.
+
+    Args:
+        client: The paperless-ngx client.
+        tags: Mixed list of integer IDs and string tag names.
+
+    Returns:
+        Set of resolved integer tag IDs.
+    """
+    ids: set[int] = {t for t in tags if isinstance(t, int)}
+    for name in (t for t in tags if isinstance(t, str)):
+        result = client.tags.list(name_exact=name)
+        if result.results:
+            ids.add(result.results[0].id)
+    return ids
 
 
 # ---------------------------------------------------------------------------
@@ -355,6 +377,8 @@ def update_document(
     document_type: int | str | None = _UNSET,
     storage_path: int | str | None = _UNSET,
     tags: list[int | str] | None = None,
+    add_tags: list[int | str] | None = None,
+    remove_tags: list[int | str] | None = None,
     archive_serial_number: int | None = _UNSET,
     custom_fields: list[dict[str, Any]] | None = None,
     owner: int | None = _UNSET,
@@ -378,7 +402,18 @@ def update_document(
             unchanged, or pass None to clear.
         storage_path: Storage path to assign (ID or name). Omit to leave
             unchanged, or pass None to clear.
-        tags: Full replacement list of tags (IDs or names).
+        tags: Full replacement list of tags (IDs or names). WARNING: overwrites
+            all existing tags on the document. To add or remove individual tags
+            without affecting others, use add_tags / remove_tags instead.
+            Mutually exclusive with add_tags and remove_tags.
+        add_tags: Tags to add to the document's current tag list (IDs or names).
+            Fetches the current document first, then merges. Mutually exclusive
+            with tags.
+        remove_tags: Tags to remove from the document's current tag list (IDs or
+            names). String names are resolved to IDs via the tags API before
+            filtering. Names that do not match any tag are silently ignored.
+            Fetches the current document first, then filters. Mutually exclusive
+            with tags.
         archive_serial_number: Archive serial number to assign. Omit to leave
             unchanged, or pass None to clear.
         custom_fields: List of custom field value dicts, each in the form
@@ -391,6 +426,12 @@ def update_document(
     Returns:
         The updated Document.
     """
+    if tags is not None and (add_tags is not None or remove_tags is not None):
+        raise ValueError(
+            "tags is mutually exclusive with add_tags and remove_tags. "
+            "Use tags to replace the full tag list, or add_tags/remove_tags to modify individual tags."
+        )
+
     client = get_client()
     kwargs: dict[str, Any] = {}
 
@@ -410,7 +451,18 @@ def update_document(
     if storage_path is not UNSET:  # type: ignore[comparison-overlap]
         kwargs["storage_path"] = storage_path
 
-    if tags is not None:
+    if add_tags is not None or remove_tags is not None:
+        current_doc = client.documents.get(id=id)
+        merged: list[int | str] = list(current_doc.tags)
+        if add_tags is not None:
+            for t in add_tags:
+                if t not in merged:
+                    merged.append(t)
+        if remove_tags is not None:
+            remove_ids = _resolve_tag_ids(client, remove_tags)
+            merged = [t for t in merged if t not in remove_ids]
+        kwargs["tags"] = merged
+    elif tags is not None:
         kwargs["tags"] = tags
 
     if archive_serial_number is not UNSET:  # type: ignore[comparison-overlap]
