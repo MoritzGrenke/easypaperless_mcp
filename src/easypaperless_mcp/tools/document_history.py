@@ -1,6 +1,6 @@
 """Document history sub-server: MCP tools for the paperless-ngx document history sub-resource."""
 
-from easypaperless import AuditLogActor, AuditLogEntry
+from easypaperless import AuditLogEntry
 from fastmcp import FastMCP
 
 from ..client import get_client

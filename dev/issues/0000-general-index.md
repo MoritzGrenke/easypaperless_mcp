@@ -1,6 +1,6 @@
 # Feature Index
 
-**Next Available ID:** 0030
+**Next Available ID:** 0031
 
 | ID | Type | Name | Status | File |
 |----|------|------|--------|------|
@@ -33,3 +33,4 @@
 | 0027 | feature | Filtered response for `update_document` with `return_fields` support | DEPLOYED | [0027-feature-update_document_filtered_response.md](0027-feature-update_document_filtered_response.md) |
 | 0028 | feature | Document history sub-server with `get_document_history` tool | DEPLOYED | [0028-feature-document_history_subserver.md](0028-feature-document_history_subserver.md) |
 | 0029 | maintenance | Expose retry config via server-side env vars | DEPLOYED | [0029-maintenance-retry_config_env_vars.md](0029-maintenance-retry_config_env_vars.md) |
+| 0030 | maintenance | Upgrade FastMCP to v3 | IMPLEMENTED | [0030-maintenance-upgrade_fastmcp_to_v3.md](0030-maintenance-upgrade_fastmcp_to_v3.md) |

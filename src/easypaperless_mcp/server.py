@@ -4,7 +4,7 @@ import os
 import mcp.types as mt
 from fastmcp import FastMCP
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
-from fastmcp.tools.tool import ToolResult
+from fastmcp.tools import ToolResult
 
 from .client import SERVER_URL, _request_token, _request_url
 from .tools.correspondents import correspondents

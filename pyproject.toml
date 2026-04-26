@@ -5,7 +5,7 @@ description = "MCP server for paperless-ngx via easypaperless"
 requires-python = ">=3.11"
 dependencies = [
     "easypaperless>=0.6.0",
-    "fastmcp>=2.0",
+    "fastmcp>=3.0",
 ]
 
 [project.scripts]
