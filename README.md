@@ -139,9 +139,11 @@ The MCP server listens on port `8000` using the `streamable-http` transport.
 |------------------|-----------|----------|-------------|
 | `PAPERLESS_TOKEN` env var | stdio | yes | paperless-ngx API token (set in Claude Desktop `"env"` config) |
 | `PAPERLESS_URL` env var | stdio | yes | paperless-ngx base URL (set in Claude Desktop `"env"` config) |
+| `PAPERLESS_USERNAME` env var | stdio | no | paperless-ngx username — when set, tools the user cannot use are hidden from the agent |
 | `Authorization: Bearer <token>` header | HTTP | yes | paperless-ngx API token (preferred; passed via `mcp-remote --header`) |
 | `X-Paperless-Token` header | HTTP | yes (deprecated) | paperless-ngx API token — use `Authorization: Bearer` instead |
 | `X-Paperless-URL` header | HTTP | if server URL not locked | paperless-ngx base URL (passed via `mcp-remote --header`) |
+| `X-Paperless-Username` header | HTTP | no | paperless-ngx username — when set, tools the user cannot use are hidden from the agent |
 
 ## Tool Reference
 

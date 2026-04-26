@@ -2,87 +2,198 @@
 
 ## Summary
 
-When an MCP client connects with a paperless-ngx API token, that token is tied to a specific user who may have limited Django permissions. The MCP server should resolve those permissions at session start and suppress any tools the user is not allowed to invoke. This prevents AI agents from discovering and attempting actions that will always be rejected by paperless-ngx.
+When a `PAPERLESS_USERNAME` is supplied alongside the API token, the MCP server resolves that user's effective Django permissions at session start and hides any tools the user is not permitted to invoke. Tools are truly hidden (absent from the tool list), not merely blocked after the fact. If no username is supplied, all tools are shown and permission enforcement falls back to paperless-ngx's own API-level 403 responses.
 
 ---
 
 ## Problem Statement
 
-Every user in paperless-ngx has a fine-grained Django permission set (e.g. `add_document`, `change_tag`, `delete_correspondent`). Currently the MCP server exposes all tools to every authenticated client regardless of what the underlying user is actually allowed to do. This leads to two problems:
+Every user in paperless-ngx has a fine-grained Django permission set (e.g. `add_document`, `change_tag`, `delete_correspondent`). Without filtering, the MCP server exposes all tools to every authenticated client regardless of what the underlying user is actually allowed to do. This leads to two problems:
 
 1. **Noise for the AI agent** — the agent may attempt operations (e.g. delete a document) that are guaranteed to fail, wasting tokens and causing confusion.
 2. **False affordance** — the tool list implies capabilities the user does not have, undermining trust in the server's tool descriptions.
 
 ---
 
-## Proposed Solution
+## Design Decisions
 
-On session start (first tool call), the server resolves the current user's Django permissions using the supplied API token. It compares those permissions against a static mapping of `tool name → required Django permission`. Any tool whose required permission is absent from the user's effective permission set is hidden from the client for the remainder of the session.
+### Security model
+This feature is a **convenience / UX improvement**, not a security control. Because the MCP server cannot verify that a supplied username actually belongs to the user presenting the token, a client operator could supply any username (including an admin's). No security guarantee is implied. The authoritative permission enforcement always remains with paperless-ngx's own API layer.
 
-The lookup result is cached for the session lifetime so it is performed at most once per connection.
+### Username is optional
+- **Username not supplied**: all tools are shown. paperless-ngx returns 403 for any call the user is not permitted to make.
+- **Username supplied**: the server resolves the user's effective permissions and hides tools the user cannot use.
 
-If the lookup fails for any reason (network error, token not associated with any known user, permission data unavailable), the server surfaces an actionable error and does not allow any tool call to proceed.
+### True tool hiding via FastMCP 3 visibility system
+Tools are hidden at the `list_tools` level using FastMCP 3's visibility system:
+- All tools are tagged with their required Django permission codename (e.g. `perm:delete_document`).
+- All tags are globally disabled by default.
+- On session start (before the tool list is sent to the client), the server resolves the user's permissions and calls `ctx.enable_components(tags=permitted_tags)` for that session only.
+- FastMCP sends `ToolListChangedNotification` automatically; other sessions are unaffected.
 
-> **Implementation note:** The mechanism for resolving which user corresponds to the provided token (e.g. a `/api/profile/` endpoint, or matching against `users.list()` output) must be confirmed during the design phase. Token values are not exposed by the users list API, so a dedicated "current user" endpoint may be required.
+This requires FastMCP 3 (see issue 0030).
 
----
+### Trigger point
+Permission resolution fires at **session start / `list_tools`**, not on the first tool call. This ensures the agent receives a correctly filtered tool list from the very first `list_tools` request.
 
-## User Stories
+### Permission resolution
+1. Read `PAPERLESS_USERNAME` from env (stdio) or `X-Paperless-Username` header (HTTP).
+2. Call `client.users.list(username_exact=username)` to retrieve the `User` object.
+3. Determine the user's **effective permissions** (union of `user_permissions` and all permissions granted via `groups`). During implementation, verify whether easypaperless already returns the effective union; if not, resolve group permissions explicitly.
+4. If `is_superuser` is `True`, skip filtering entirely — the user sees all tools.
 
-- As an AI agent, I want to only see tools I am actually permitted to use so that I do not waste calls attempting forbidden operations.
-- As a paperless-ngx administrator, I want read-only users connecting via MCP to be unable to discover or invoke write/delete tools so that the permission model I configured in paperless-ngx is respected end-to-end.
-- As a server operator, I want the permission check to be performed once per session so that normal tool use is not slowed down by repeated API calls.
+### Credential flow
+| Transport | Credential |
+|-----------|-----------|
+| stdio | `PAPERLESS_USERNAME` environment variable |
+| streamable-http | `X-Paperless-Username` request header |
+
+Consistent with the existing pattern from issue 0019 (`PAPERLESS_TOKEN` / `X-Paperless-Token`).
+
+### Permission mapping
+A `TOOL_PERMISSIONS` mapping covers every registered tool. The mapping is **convention-based** with an explicit override dict for edge cases:
+
+**Convention** — derive from tool name:
+| Tool verb | Django action |
+|-----------|--------------|
+| `list_*`, `get_*`, `download_*` | `view` |
+| `create_*` | `add` |
+| `update_*` | `change` |
+| `delete_*`, `bulk_delete_*` | `delete` |
+
+Model name is derived from the tool name after the verb. Example: `delete_document` → `paperless.delete_document`.
+
+**Override dict** — for tools that do not follow the convention (e.g. `restore_trash`, `get_document_history`, note sub-resource tools). The exact overrides and the correct Django app label must be verified against the paperless-ngx source during implementation.
+
+### Error handling
+| Situation | Behaviour |
+|-----------|-----------|
+| Username not supplied | All tools shown; no API call made |
+| Username supplied, lookup succeeds | Filtered tool list based on effective permissions |
+| Username supplied, lookup fails (user not found / API error) | Error returned; no tools shown |
+| `is_superuser = True` | All tools shown; no filtering applied |
 
 ---
 
 ## Scope
 
 ### In Scope
-- Permission resolution at session start for both `stdio` and `streamable-http` transports.
-- A static mapping of every MCP tool to the Django permission it requires (e.g. `delete_document` → `paperless.delete_document`).
-- Per-session caching of the resolved permission set (no re-fetch within a session).
-- Tools with no write/delete semantics (read-only list/get tools) require only the corresponding `view_*` permission.
-- If the permission check fails, the server returns a clear error and no tool calls are processed.
-- Unit tests covering: all permission tiers (view/add/change/delete), the caching behaviour, and the error path.
+- `server.py`: integrate FastMCP 3 visibility system; tag all tools with their required permission; apply session-start permission hook.
+- `client.py` / `server.py` (middleware): extract `PAPERLESS_USERNAME` / `X-Paperless-Username` alongside existing credentials; make it available to the permission hook.
+- `TOOL_PERMISSIONS` mapping (convention + overrides) covering every registered tool.
+- Effective permission resolution (user_permissions + group permissions).
+- Superuser bypass.
+- Clear error message when username is set but lookup fails.
+- Unit tests (see Acceptance Criteria).
+- README / docstring updates for the new `PAPERLESS_USERNAME` credential.
 
 ### Out of Scope
-- Object-level permissions (e.g. per-document owner/viewer assignments) — only model-level Django content-type permissions are considered.
-- Mid-session permission refresh (permissions are fixed for the session lifetime).
+- Object-level permissions (per-document owner/viewer assignments).
+- Mid-session permission refresh.
 - Any changes to the easypaperless library.
-- Changing how credentials are supplied (that is handled by issue 0019/0022).
+- Changing how the token or URL are supplied.
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] On the first tool call of a session, the server looks up the effective Django permissions of the authenticated user and caches them for the session.
-- [ ] A static `TOOL_PERMISSIONS` mapping exists that covers every tool registered in the MCP server, associating each tool with the Django permission required to invoke it.
-- [ ] Tools whose required permission is absent from the user's effective set are not advertised to the client (hidden, not just blocked after the fact).
-- [ ] If the permission lookup fails (any error), the server returns a descriptive error message and does not proceed with the tool call.
-- [ ] A superuser or a user with all relevant permissions sees the full tool list unchanged.
-- [ ] A user with only `view_*` permissions sees only list/get tools; all create, update, delete, and bulk-action tools are hidden.
-- [ ] The permission check is performed at most once per session; subsequent tool calls in the same session use the cached result without additional API calls.
+- [ ] When `PAPERLESS_USERNAME` is not supplied, all tools are visible to the client unchanged.
+- [ ] When `PAPERLESS_USERNAME` is supplied and the lookup succeeds, only tools whose required permission is present in the user's effective permission set are shown.
+- [ ] Effective permissions are the union of `user_permissions` and all permissions granted via the user's `groups`.
+- [ ] When `is_superuser` is `True`, all tools are shown regardless of `user_permissions`.
+- [ ] A `TOOL_PERMISSIONS` mapping exists and covers every tool registered in the MCP server.
+- [ ] When `PAPERLESS_USERNAME` is supplied but the lookup fails (user not found or API error), the server returns a descriptive error and no tools are shown.
 - [ ] Both `stdio` and `streamable-http` transports apply the same filtering logic.
+- [ ] The permission lookup is performed at session start (before the first tool list is sent), not on the first tool call.
+- [ ] The permission lookup is performed at most once per session; subsequent `list_tools` requests within the same session use the cached result.
 - [ ] All existing tests continue to pass.
-- [ ] New unit tests cover the happy path (full permissions), the read-only path, the superuser path, the cache hit path, and the error/fail path.
+- [ ] New unit tests cover: no username supplied (all tools shown), full-permissions user, read-only user, superuser bypass, lookup failure, cache hit (lookup called only once per session).
+- [ ] `ruff check` and `mypy --strict` pass with no errors.
 
 ---
 
 ## Dependencies & Constraints
 
-- The paperless-ngx API does not expose which user a token belongs to — it is not possible to resolve the current user from the token alone. Therefore the client must explicitly supply the username alongside the token (e.g. as an additional header or env var). The server uses the username to look up the user via `users.list()` and read their permissions.
-- FastMCP must support a mechanism to conditionally register or suppress tools at session/connection time. If dynamic tool registration is not supported, an alternative approach (e.g. tools that return a "permission denied" error) may be needed — to be resolved during architecture.
-- Depends on issue 0019 (client-side auth) and issue 0022 (Bearer header) being in place so the token is reliably available when the permission check runs.
+- **Depends on issue 0030** (FastMCP 3 upgrade) — the visibility system (`mcp.disable()` / `ctx.enable_components()`) requires FastMCP 3.
+- **Depends on issues 0019 and 0022** — token and URL credentials must be reliably available in the request context before the permission hook can run.
+- The exact Django app label used by paperless-ngx (e.g. `paperless`, `documents`) and the permission codenames for sub-resources (notes, history, trash) must be verified against the paperless-ngx source during implementation.
 
 ---
 
 ## Priority
+
 `High`
 
 ---
 
 ## Additional Notes
 
-- The Django permission codenames follow the pattern `<app>.<action>_<model>`, e.g. `paperless.delete_document`, `paperless.add_tag`, `paperless.change_correspondent`. The exact app label used by paperless-ngx must be verified.
-- The `is_superuser` flag should bypass all permission checks — superusers see all tools.
-- Related issues: 0019 (client-side credentials), 0022 (Bearer auth header).
+- The Django permission codenames follow the pattern `<app_label>.<action>_<model>`. The exact app label must be confirmed during implementation by inspecting a real `user_permissions` list returned by the paperless-ngx API.
+- Tools for sub-resources (document notes, document history, trash) may not follow the standard naming convention and will require explicit entries in the override dict.
+- This is a convenience feature, not a security boundary. Admins who require hard enforcement must rely on paperless-ngx's own permission layer.
+
+---
+
+## QA
+
+**Tested by:** QA Engineer  
+**Date:** 2026-04-26  
+**Commit:** uncommitted changes on master (post-25bc5f7)
+
+### Test Results
+
+| # | Test Case | Expected | Actual | Status |
+|---|-----------|----------|--------|--------|
+| 1 | AC1: No username supplied → all tools visible, no API call | All tools returned | All tools returned; `show_all=True` cached | ✅ Pass |
+| 2 | AC2: Username supplied, lookup succeeds → only permitted tools shown | Filtered tool list | Only permitted tools returned | ✅ Pass |
+| 3 | AC3: Effective perms = union of `user_permissions` + `inherited_permissions` | Union set | Correct union computed; deduplication works | ✅ Pass |
+| 4 | AC4: `is_superuser=True` → all tools shown regardless of permissions | All tools returned | All tools returned; `show_all=True` cached | ✅ Pass |
+| 5 | AC5: `TOOL_PERMISSIONS` covers every registered tool | 60 tools mapped | 60 tools mapped, test `test_tool_permissions_covers_all_tools` passes | ✅ Pass |
+| 6 | AC6: Username supplied, user not found → descriptive RuntimeError, no tools | `RuntimeError` with "not found" | `RuntimeError("...not found...")` raised | ✅ Pass |
+| 7 | AC6: Username supplied, API error → descriptive RuntimeError | `RuntimeError` with "Permission lookup failed" | Raised correctly | ✅ Pass |
+| 8 | AC7: stdio transport reads from env vars | `PAPERLESS_USERNAME` env var used | Correctly read from env | ✅ Pass |
+| 9 | AC7: HTTP transport reads from `X-Paperless-Username` header | Header value used | Correctly extracted from request headers | ✅ Pass |
+| 10 | AC8: Lookup fires in `on_list_tools`, not on first tool call | `on_list_tools` hook | Implemented in `PermissionMiddleware.on_list_tools` | ✅ Pass |
+| 11 | AC9: Cache hit — second `list_tools` skips API call | `PaperlessClient` not instantiated | `mock_pc.assert_not_called()` passes | ✅ Pass |
+| 12 | AC9: Cache hit with `show_all=True` → all tools returned | All tools | All tools returned without API call | ✅ Pass |
+| 13 | AC10: All existing tests pass | 344 tests pass | 364 tests pass (20 new) | ✅ Pass |
+| 14 | AC11: New tests cover all required scenarios | 6+ scenario categories | 20 tests across all categories | ✅ Pass |
+| 15 | AC12: `mypy --strict` passes | No errors | No issues on `permissions.py` + `server.py` | ✅ Pass |
+| 16 | AC12: `ruff check` passes | No errors | **1 error**: unused `Sequence` import in `tests/unit/test_permissions.py:5` | ❌ Fail |
+| 17 | Edge: `fastmcp_context` is None → pass through unchanged | All tools returned | All tools returned, no crash | ✅ Pass |
+| 18 | Edge: `get_state` raises exception → pass through unchanged | All tools returned | Returns all tools silently | ✅ Pass |
+| 19 | Scope: README documents `PAPERLESS_USERNAME` / `X-Paperless-Username` | Credential table updated | Not documented in README | ❌ Fail |
+
+### Bugs Found
+
+#### BUG-001 — Unused import `Sequence` in `test_permissions.py` [Severity: Low]
+**Steps to reproduce:**
+1. Run `ruff check tests/unit/test_permissions.py`
+
+**Expected:** No errors  
+**Actual:** `F401 [*] collections.abc.Sequence imported but unused` at line 5  
+**Severity:** Low  
+**Notes:** One-line fix. Blocks AC12 ("ruff check passes").  
+**Fixed:** Removed unused import. `ruff check` now clean.
+
+#### BUG-002 — README missing `PAPERLESS_USERNAME` / `X-Paperless-Username` documentation [Severity: Low]
+**Steps to reproduce:**
+1. Open `README.md`, look at the "MCP Client Configuration" credential table (lines 138–144).
+
+**Expected:** `PAPERLESS_USERNAME` env var (stdio) and `X-Paperless-Username` header (HTTP) listed with description (optional, enables permission-based tool filtering).  
+**Actual:** Neither credential is documented.  
+**Severity:** Low  
+**Notes:** Documented in the issue scope ("README / docstring updates for the new `PAPERLESS_USERNAME` credential") but was not implemented.  
+**Fixed:** Added both credentials to the "MCP Client Configuration" table in `README.md`.
+
+### Automated Tests
+- `tests/unit/test_permissions.py` — 20 passed, 0 failed
+- `tests/unit/` (full suite) — 364 passed, 0 failed
+- `mypy --strict src/easypaperless_mcp/permissions.py src/easypaperless_mcp/server.py` — clean
+- `ruff check` — clean (after BUG-001 fix)
+
+### Summary
+- ACs tested: 12/12
+- ACs passing: 12/12
+- Bugs found: 2 (Critical: 0, High: 0, Medium: 0, Low: 2) — both fixed
+- Recommendation: ✅ Ready to merge
