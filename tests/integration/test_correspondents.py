@@ -17,7 +17,9 @@ def test_list_correspondents_returns_list_result(paperless_client: SyncPaperless
     assert isinstance(result.items, list)
 
 
-def test_list_correspondents_returns_correspondent_objects(paperless_client: SyncPaperlessClient) -> None:
+def test_list_correspondents_returns_correspondent_objects(
+    paperless_client: SyncPaperlessClient,
+) -> None:
     result = list_correspondents()
     for correspondent in result.items:
         assert isinstance(correspondent, Correspondent)

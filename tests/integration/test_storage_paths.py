@@ -41,7 +41,9 @@ def test_list_storage_paths_returns_list_result(paperless_client: SyncPaperlessC
     assert isinstance(result.items, list)
 
 
-def test_list_storage_paths_returns_storage_path_objects(paperless_client: SyncPaperlessClient) -> None:
+def test_list_storage_paths_returns_storage_path_objects(
+    paperless_client: SyncPaperlessClient,
+) -> None:
     result = list_storage_paths()
     for sp in result.items:
         assert isinstance(sp, StoragePath)
@@ -75,7 +77,9 @@ def test_get_storage_path_returns_storage_path(
 # ---------------------------------------------------------------------------
 
 
-def test_create_update_delete_storage_path_round_trip(paperless_client: SyncPaperlessClient) -> None:
+def test_create_update_delete_storage_path_round_trip(
+    paperless_client: SyncPaperlessClient,
+) -> None:
     """Create a storage path, update its name, verify the change, then delete it."""
     created = create_storage_path(name=_TEST_NAME, path="{title}")
     assert isinstance(created, StoragePath)

@@ -49,7 +49,9 @@ def make_custom_field(**kwargs: Any) -> CustomField:
 
 
 def test_list_custom_fields_calls_client(patch_get_client: MagicMock) -> None:
-    patch_get_client.custom_fields.list.return_value = MagicMock(count=2, results=[make_custom_field(id=1), make_custom_field(id=2)])
+    patch_get_client.custom_fields.list.return_value = MagicMock(
+        count=2, results=[make_custom_field(id=1), make_custom_field(id=2)]
+    )
     result = list_custom_fields()
     patch_get_client.custom_fields.list.assert_called_once()
     assert result.count == 2
@@ -99,12 +101,15 @@ def test_list_custom_fields_omits_none_optional_params(patch_get_client: MagicMo
 def test_list_custom_fields_has_no_ids_param(patch_get_client: MagicMock) -> None:
     """list_custom_fields has no ids filter — unlike correspondents/tags."""
     import inspect
+
     sig = inspect.signature(list_custom_fields)
     assert "ids" not in sig.parameters
 
 
 def test_list_custom_fields_returns_custom_field_objects(patch_get_client: MagicMock) -> None:
-    patch_get_client.custom_fields.list.return_value = MagicMock(count=1, results=[make_custom_field(id=5, name="Amount")])
+    patch_get_client.custom_fields.list.return_value = MagicMock(
+        count=1, results=[make_custom_field(id=5, name="Amount")]
+    )
     result = list_custom_fields()
     assert isinstance(result.items[0], CustomField)
     assert result.items[0].id == 5
@@ -136,7 +141,9 @@ def test_get_custom_field_returns_custom_field(patch_get_client: MagicMock) -> N
 
 
 def test_create_custom_field_minimal(patch_get_client: MagicMock) -> None:
-    patch_get_client.custom_fields.create.return_value = make_custom_field(id=10, name="Amount", data_type="monetary")
+    patch_get_client.custom_fields.create.return_value = make_custom_field(
+        id=10, name="Amount", data_type="monetary"
+    )
     result = create_custom_field(name="Amount", data_type="monetary")
     patch_get_client.custom_fields.create.assert_called_once()
     call_kwargs = patch_get_client.custom_fields.create.call_args.kwargs
@@ -228,7 +235,9 @@ def test_update_custom_field_passes_all_params(patch_get_client: MagicMock) -> N
     assert call_kwargs["set_permissions"] is perms
 
 
-def test_update_custom_field_clears_nullable_fields_when_none_passed(patch_get_client: MagicMock) -> None:
+def test_update_custom_field_clears_nullable_fields_when_none_passed(
+    patch_get_client: MagicMock,
+) -> None:
     """Explicitly passing None must forward None to the client (clear the field)."""
     patch_get_client.custom_fields.update.return_value = make_custom_field(id=1)
     update_custom_field(1, extra_data=None)
@@ -243,9 +252,12 @@ def test_update_custom_field_returns_custom_field(patch_get_client: MagicMock) -
     assert isinstance(result, CustomField)
 
 
-def test_update_custom_field_has_owner_and_set_permissions_params(patch_get_client: MagicMock) -> None:
+def test_update_custom_field_has_owner_and_set_permissions_params(
+    patch_get_client: MagicMock,
+) -> None:
     """update_custom_field supports owner/set_permissions since easypaperless 0.3.0."""
     import inspect
+
     sig = inspect.signature(update_custom_field)
     assert "owner" in sig.parameters
     assert "set_permissions" in sig.parameters

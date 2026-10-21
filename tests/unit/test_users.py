@@ -49,7 +49,9 @@ def make_user(**kwargs: Any) -> User:
 
 
 def test_list_users_calls_client(patch_get_client: MagicMock) -> None:
-    patch_get_client.users.list.return_value = MagicMock(count=2, results=[make_user(id=1), make_user(id=2)])
+    patch_get_client.users.list.return_value = MagicMock(
+        count=2, results=[make_user(id=1), make_user(id=2)]
+    )
     result = list_users()
     patch_get_client.users.list.assert_called_once()
     assert result.count == 2
@@ -96,7 +98,9 @@ def test_list_users_omits_none_optional_params(patch_get_client: MagicMock) -> N
 
 
 def test_list_users_returns_user_objects(patch_get_client: MagicMock) -> None:
-    patch_get_client.users.list.return_value = MagicMock(count=1, results=[make_user(id=5, username="alice")])
+    patch_get_client.users.list.return_value = MagicMock(
+        count=1, results=[make_user(id=5, username="alice")]
+    )
     result = list_users()
     assert isinstance(result.items[0], User)
     assert result.items[0].id == 5

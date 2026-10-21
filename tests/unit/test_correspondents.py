@@ -50,7 +50,9 @@ def make_correspondent(**kwargs: Any) -> Correspondent:
 
 
 def test_list_correspondents_calls_client(patch_get_client: MagicMock) -> None:
-    patch_get_client.correspondents.list.return_value = MagicMock(count=2, results=[make_correspondent(id=1), make_correspondent(id=2)])
+    patch_get_client.correspondents.list.return_value = MagicMock(
+        count=2, results=[make_correspondent(id=1), make_correspondent(id=2)]
+    )
     result = list_correspondents()
     patch_get_client.correspondents.list.assert_called_once()
     assert result.count == 2
@@ -104,7 +106,9 @@ def test_list_correspondents_omits_none_optional_params(patch_get_client: MagicM
 
 
 def test_list_correspondents_returns_correspondent_objects(patch_get_client: MagicMock) -> None:
-    patch_get_client.correspondents.list.return_value = MagicMock(count=1, results=[make_correspondent(id=5, name="Bank")])
+    patch_get_client.correspondents.list.return_value = MagicMock(
+        count=1, results=[make_correspondent(id=5, name="Bank")]
+    )
     result = list_correspondents()
     assert isinstance(result.items[0], Correspondent)
     assert result.items[0].id == 5
@@ -239,7 +243,9 @@ def test_update_correspondent_returns_correspondent(patch_get_client: MagicMock)
     assert isinstance(result, Correspondent)
 
 
-def test_update_correspondent_clears_nullable_fields_when_none_passed(patch_get_client: MagicMock) -> None:
+def test_update_correspondent_clears_nullable_fields_when_none_passed(
+    patch_get_client: MagicMock,
+) -> None:
     """Explicitly passing None must forward None to the client (clear the field)."""
     patch_get_client.correspondents.update.return_value = make_correspondent(id=1)
     update_correspondent(1, match=None, owner=None)
@@ -294,7 +300,9 @@ def test_bulk_set_correspondent_permissions_calls_client(patch_get_client: Magic
     )
 
 
-def test_bulk_set_correspondent_permissions_with_set_permissions(patch_get_client: MagicMock) -> None:
+def test_bulk_set_correspondent_permissions_with_set_permissions(
+    patch_get_client: MagicMock,
+) -> None:
     perms = MagicMock(spec=SetPermissions)
     bulk_set_correspondent_permissions([4, 5], set_permissions=perms)
     patch_get_client.correspondents.bulk_set_permissions.assert_called_once_with(

@@ -50,7 +50,9 @@ def make_storage_path(**kwargs: Any) -> StoragePath:
 
 
 def test_list_storage_paths_calls_client(patch_get_client: MagicMock) -> None:
-    patch_get_client.storage_paths.list.return_value = MagicMock(count=2, results=[make_storage_path(id=1), make_storage_path(id=2)])
+    patch_get_client.storage_paths.list.return_value = MagicMock(
+        count=2, results=[make_storage_path(id=1), make_storage_path(id=2)]
+    )
     result = list_storage_paths()
     patch_get_client.storage_paths.list.assert_called_once()
     assert result.count == 2
@@ -65,7 +67,9 @@ def test_list_storage_paths_returns_empty_list(patch_get_client: MagicMock) -> N
 
 
 def test_list_storage_paths_returns_storage_path_objects(patch_get_client: MagicMock) -> None:
-    patch_get_client.storage_paths.list.return_value = MagicMock(count=1, results=[make_storage_path(id=5, name="Archive")])
+    patch_get_client.storage_paths.list.return_value = MagicMock(
+        count=1, results=[make_storage_path(id=5, name="Archive")]
+    )
     result = list_storage_paths()
     assert isinstance(result.items[0], StoragePath)
     assert result.items[0].id == 5
@@ -93,13 +97,18 @@ def test_list_storage_paths_passes_name_exact(patch_get_client: MagicMock) -> No
 def test_list_storage_paths_passes_path_contains(patch_get_client: MagicMock) -> None:
     patch_get_client.storage_paths.list.return_value = MagicMock(count=0, results=[])
     list_storage_paths(path_contains="{correspondent}")
-    assert patch_get_client.storage_paths.list.call_args.kwargs["path_contains"] == "{correspondent}"
+    assert (
+        patch_get_client.storage_paths.list.call_args.kwargs["path_contains"] == "{correspondent}"
+    )
 
 
 def test_list_storage_paths_passes_path_exact(patch_get_client: MagicMock) -> None:
     patch_get_client.storage_paths.list.return_value = MagicMock(count=0, results=[])
     list_storage_paths(path_exact="{correspondent}/{title}")
-    assert patch_get_client.storage_paths.list.call_args.kwargs["path_exact"] == "{correspondent}/{title}"
+    assert (
+        patch_get_client.storage_paths.list.call_args.kwargs["path_exact"]
+        == "{correspondent}/{title}"
+    )
 
 
 def test_list_storage_paths_passes_pagination_params(patch_get_client: MagicMock) -> None:
@@ -267,7 +276,9 @@ def test_update_storage_path_passes_all_params(patch_get_client: MagicMock) -> N
     assert call_kwargs["set_permissions"] is perms
 
 
-def test_update_storage_path_clears_nullable_fields_when_none_passed(patch_get_client: MagicMock) -> None:
+def test_update_storage_path_clears_nullable_fields_when_none_passed(
+    patch_get_client: MagicMock,
+) -> None:
     """Explicitly passing None must forward None to the client (clear the field)."""
     patch_get_client.storage_paths.update.return_value = make_storage_path(id=1)
     update_storage_path(1, path=None, match=None, owner=None)
@@ -335,7 +346,9 @@ def test_bulk_set_storage_path_permissions_calls_client(patch_get_client: MagicM
     )
 
 
-def test_bulk_set_storage_path_permissions_with_set_permissions(patch_get_client: MagicMock) -> None:
+def test_bulk_set_storage_path_permissions_with_set_permissions(
+    patch_get_client: MagicMock,
+) -> None:
     perms = MagicMock(spec=SetPermissions)
     bulk_set_storage_path_permissions([4, 5], set_permissions=perms)
     patch_get_client.storage_paths.bulk_set_permissions.assert_called_once_with(

@@ -50,7 +50,9 @@ def make_document_type(**kwargs: Any) -> DocumentType:
 
 
 def test_list_document_types_calls_client(patch_get_client: MagicMock) -> None:
-    patch_get_client.document_types.list.return_value = MagicMock(count=2, results=[make_document_type(id=1), make_document_type(id=2)])
+    patch_get_client.document_types.list.return_value = MagicMock(
+        count=2, results=[make_document_type(id=1), make_document_type(id=2)]
+    )
     result = list_document_types()
     patch_get_client.document_types.list.assert_called_once()
     assert result.count == 2
@@ -111,7 +113,9 @@ def test_list_document_types_descending_default_is_false(patch_get_client: Magic
 
 
 def test_list_document_types_returns_document_type_objects(patch_get_client: MagicMock) -> None:
-    patch_get_client.document_types.list.return_value = MagicMock(count=1, results=[make_document_type(id=5, name="Contract")])
+    patch_get_client.document_types.list.return_value = MagicMock(
+        count=1, results=[make_document_type(id=5, name="Contract")]
+    )
     result = list_document_types()
     assert isinstance(result.items[0], DocumentType)
     assert result.items[0].id == 5
@@ -247,7 +251,9 @@ def test_update_document_type_passes_all_params(patch_get_client: MagicMock) -> 
     assert call_kwargs["set_permissions"] is perms
 
 
-def test_update_document_type_clears_nullable_fields_when_none_passed(patch_get_client: MagicMock) -> None:
+def test_update_document_type_clears_nullable_fields_when_none_passed(
+    patch_get_client: MagicMock,
+) -> None:
     """Explicitly passing None must forward None to the client (clear the field)."""
     patch_get_client.document_types.update.return_value = make_document_type(id=1)
     update_document_type(1, match=None, owner=None)
@@ -308,7 +314,9 @@ def test_bulk_set_document_type_permissions_calls_client(patch_get_client: Magic
     )
 
 
-def test_bulk_set_document_type_permissions_with_set_permissions(patch_get_client: MagicMock) -> None:
+def test_bulk_set_document_type_permissions_with_set_permissions(
+    patch_get_client: MagicMock,
+) -> None:
     perms = MagicMock(spec=SetPermissions)
     bulk_set_document_type_permissions([4, 5], set_permissions=perms)
     patch_get_client.document_types.bulk_set_permissions.assert_called_once_with(

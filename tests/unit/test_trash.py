@@ -58,7 +58,9 @@ def make_document(**kwargs: Any) -> Document:
 
 
 def test_list_trash_calls_client(patch_get_client: MagicMock) -> None:
-    patch_get_client.trash.list.return_value = MagicMock(count=2, results=[make_document(id=1), make_document(id=2)])
+    patch_get_client.trash.list.return_value = MagicMock(
+        count=2, results=[make_document(id=1), make_document(id=2)]
+    )
     result = list_trash()
     patch_get_client.trash.list.assert_called_once()
     assert result.count == 2

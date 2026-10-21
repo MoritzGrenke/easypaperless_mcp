@@ -46,37 +46,75 @@ def _make_user(**kwargs: Any) -> User:
 
 _EXPECTED_TOOLS = {
     # documents
-    "list_documents", "get_document", "get_document_metadata", "update_document",
-    "delete_document", "upload_document", "bulk_add_tag", "bulk_remove_tag",
-    "bulk_modify_tags", "bulk_delete_documents", "bulk_set_correspondent",
-    "bulk_set_document_type", "bulk_set_storage_path", "bulk_modify_custom_fields",
+    "list_documents",
+    "get_document",
+    "get_document_metadata",
+    "update_document",
+    "delete_document",
+    "upload_document",
+    "bulk_add_tag",
+    "bulk_remove_tag",
+    "bulk_modify_tags",
+    "bulk_delete_documents",
+    "bulk_set_correspondent",
+    "bulk_set_document_type",
+    "bulk_set_storage_path",
+    "bulk_modify_custom_fields",
     "bulk_set_permissions",
     # document history
     "get_document_history",
     # document notes
-    "list_document_notes", "create_document_note", "delete_document_note",
+    "list_document_notes",
+    "create_document_note",
+    "delete_document_note",
     # tags
-    "list_tags", "get_tag", "create_tag", "update_tag", "delete_tag",
-    "bulk_delete_tags", "bulk_set_tag_permissions",
+    "list_tags",
+    "get_tag",
+    "create_tag",
+    "update_tag",
+    "delete_tag",
+    "bulk_delete_tags",
+    "bulk_set_tag_permissions",
     # correspondents
-    "list_correspondents", "get_correspondent", "create_correspondent",
-    "update_correspondent", "delete_correspondent", "bulk_delete_correspondents",
+    "list_correspondents",
+    "get_correspondent",
+    "create_correspondent",
+    "update_correspondent",
+    "delete_correspondent",
+    "bulk_delete_correspondents",
     "bulk_set_correspondent_permissions",
     # document types
-    "list_document_types", "get_document_type", "create_document_type",
-    "update_document_type", "delete_document_type", "bulk_delete_document_types",
+    "list_document_types",
+    "get_document_type",
+    "create_document_type",
+    "update_document_type",
+    "delete_document_type",
+    "bulk_delete_document_types",
     "bulk_set_document_type_permissions",
     # custom fields
-    "list_custom_fields", "get_custom_field", "create_custom_field",
-    "update_custom_field", "delete_custom_field",
+    "list_custom_fields",
+    "get_custom_field",
+    "create_custom_field",
+    "update_custom_field",
+    "delete_custom_field",
     # storage paths
-    "list_storage_paths", "get_storage_path", "create_storage_path",
-    "update_storage_path", "delete_storage_path", "bulk_delete_storage_paths",
+    "list_storage_paths",
+    "get_storage_path",
+    "create_storage_path",
+    "update_storage_path",
+    "delete_storage_path",
+    "bulk_delete_storage_paths",
     "bulk_set_storage_path_permissions",
     # users
-    "list_users", "get_user", "create_user", "update_user", "delete_user",
+    "list_users",
+    "get_user",
+    "create_user",
+    "update_user",
+    "delete_user",
     # trash
-    "list_trash", "restore_trash", "empty_trash",
+    "list_trash",
+    "restore_trash",
+    "empty_trash",
 }
 
 
@@ -185,7 +223,9 @@ def call_next_returning(request: Any) -> AsyncMock:
 
 
 @pytest.mark.asyncio
-async def test_no_username_stdio_shows_all_tools(middleware: PermissionMiddleware, monkeypatch: Any) -> None:
+async def test_no_username_stdio_shows_all_tools(
+    middleware: PermissionMiddleware, monkeypatch: Any
+) -> None:
     monkeypatch.delenv("PAPERLESS_USERNAME", raising=False)
     monkeypatch.setenv("PAPERLESS_TOKEN", "tok")
     monkeypatch.setenv("PAPERLESS_URL", "http://x")
@@ -227,9 +267,11 @@ async def test_no_username_http_shows_all_tools(middleware: PermissionMiddleware
     transport_mock.get.return_value = "http"
     context = _make_middleware_context(ctx)
 
-    with patch("fastmcp.server.context._current_transport", transport_mock), \
-         patch("fastmcp.server.dependencies.get_http_request", return_value=request), \
-         patch("easypaperless_mcp.server.SERVER_URL", None):
+    with (
+        patch("fastmcp.server.context._current_transport", transport_mock),
+        patch("fastmcp.server.dependencies.get_http_request", return_value=request),
+        patch("easypaperless_mcp.server.SERVER_URL", None),
+    ):
         result = await middleware.on_list_tools(context, call_next)
 
     assert list(result) == all_tools
@@ -240,7 +282,9 @@ async def test_no_username_http_shows_all_tools(middleware: PermissionMiddleware
 
 
 @pytest.mark.asyncio
-async def test_full_permissions_user_sees_all_tools(middleware: PermissionMiddleware, monkeypatch: Any) -> None:
+async def test_full_permissions_user_sees_all_tools(
+    middleware: PermissionMiddleware, monkeypatch: Any
+) -> None:
     monkeypatch.setenv("PAPERLESS_USERNAME", "alice")
     monkeypatch.setenv("PAPERLESS_TOKEN", "tok")
     monkeypatch.setenv("PAPERLESS_URL", "http://x")
@@ -271,8 +315,10 @@ async def test_full_permissions_user_sees_all_tools(middleware: PermissionMiddle
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=None)
 
-    with patch("fastmcp.server.context._current_transport", transport_mock), \
-         patch("easypaperless.client.PaperlessClient", return_value=mock_client):
+    with (
+        patch("fastmcp.server.context._current_transport", transport_mock),
+        patch("easypaperless.client.PaperlessClient", return_value=mock_client),
+    ):
         result = await middleware.on_list_tools(context, call_next)
 
     assert {t.name for t in result} == {t.name for t in all_tools}
@@ -282,7 +328,9 @@ async def test_full_permissions_user_sees_all_tools(middleware: PermissionMiddle
 
 
 @pytest.mark.asyncio
-async def test_read_only_user_sees_only_view_tools(middleware: PermissionMiddleware, monkeypatch: Any) -> None:
+async def test_read_only_user_sees_only_view_tools(
+    middleware: PermissionMiddleware, monkeypatch: Any
+) -> None:
     monkeypatch.setenv("PAPERLESS_USERNAME", "bob")
     monkeypatch.setenv("PAPERLESS_TOKEN", "tok")
     monkeypatch.setenv("PAPERLESS_URL", "http://x")
@@ -312,8 +360,10 @@ async def test_read_only_user_sees_only_view_tools(middleware: PermissionMiddlew
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=None)
 
-    with patch("fastmcp.server.context._current_transport", transport_mock), \
-         patch("easypaperless.client.PaperlessClient", return_value=mock_client):
+    with (
+        patch("fastmcp.server.context._current_transport", transport_mock),
+        patch("easypaperless.client.PaperlessClient", return_value=mock_client),
+    ):
         result = await middleware.on_list_tools(context, call_next)
 
     result_names = {t.name for t in result}
@@ -356,8 +406,10 @@ async def test_superuser_sees_all_tools(middleware: PermissionMiddleware, monkey
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=None)
 
-    with patch("fastmcp.server.context._current_transport", transport_mock), \
-         patch("easypaperless.client.PaperlessClient", return_value=mock_client):
+    with (
+        patch("fastmcp.server.context._current_transport", transport_mock),
+        patch("easypaperless.client.PaperlessClient", return_value=mock_client),
+    ):
         result = await middleware.on_list_tools(context, call_next)
 
     assert list(result) == all_tools
@@ -368,7 +420,9 @@ async def test_superuser_sees_all_tools(middleware: PermissionMiddleware, monkey
 
 
 @pytest.mark.asyncio
-async def test_user_not_found_raises_error(middleware: PermissionMiddleware, monkeypatch: Any) -> None:
+async def test_user_not_found_raises_error(
+    middleware: PermissionMiddleware, monkeypatch: Any
+) -> None:
     monkeypatch.setenv("PAPERLESS_USERNAME", "ghost")
     monkeypatch.setenv("PAPERLESS_TOKEN", "tok")
     monkeypatch.setenv("PAPERLESS_URL", "http://x")
@@ -391,14 +445,18 @@ async def test_user_not_found_raises_error(middleware: PermissionMiddleware, mon
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=None)
 
-    with patch("fastmcp.server.context._current_transport", transport_mock), \
-         patch("easypaperless.client.PaperlessClient", return_value=mock_client):
+    with (
+        patch("fastmcp.server.context._current_transport", transport_mock),
+        patch("easypaperless.client.PaperlessClient", return_value=mock_client),
+    ):
         with pytest.raises(RuntimeError, match="not found"):
             await middleware.on_list_tools(context, call_next)
 
 
 @pytest.mark.asyncio
-async def test_api_error_raises_descriptive_error(middleware: PermissionMiddleware, monkeypatch: Any) -> None:
+async def test_api_error_raises_descriptive_error(
+    middleware: PermissionMiddleware, monkeypatch: Any
+) -> None:
     monkeypatch.setenv("PAPERLESS_USERNAME", "alice")
     monkeypatch.setenv("PAPERLESS_TOKEN", "tok")
     monkeypatch.setenv("PAPERLESS_URL", "http://x")
@@ -418,8 +476,10 @@ async def test_api_error_raises_descriptive_error(middleware: PermissionMiddlewa
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=None)
 
-    with patch("fastmcp.server.context._current_transport", transport_mock), \
-         patch("easypaperless.client.PaperlessClient", return_value=mock_client):
+    with (
+        patch("fastmcp.server.context._current_transport", transport_mock),
+        patch("easypaperless.client.PaperlessClient", return_value=mock_client),
+    ):
         with pytest.raises(RuntimeError, match="Permission lookup failed"):
             await middleware.on_list_tools(context, call_next)
 
@@ -446,8 +506,10 @@ async def test_cache_hit_skips_api_call(middleware: PermissionMiddleware, monkey
     transport_mock.get.return_value = "stdio"
     context = _make_middleware_context(ctx)
 
-    with patch("fastmcp.server.context._current_transport", transport_mock), \
-         patch("easypaperless.client.PaperlessClient") as mock_pc:
+    with (
+        patch("fastmcp.server.context._current_transport", transport_mock),
+        patch("easypaperless.client.PaperlessClient") as mock_pc,
+    ):
         result = await middleware.on_list_tools(context, call_next)
 
     # PaperlessClient must not be instantiated on a cache hit
@@ -472,8 +534,10 @@ async def test_cache_hit_show_all_returns_all_tools(middleware: PermissionMiddle
     transport_mock.get.return_value = "stdio"
     context = _make_middleware_context(ctx)
 
-    with patch("fastmcp.server.context._current_transport", transport_mock), \
-         patch("easypaperless.client.PaperlessClient") as mock_pc:
+    with (
+        patch("fastmcp.server.context._current_transport", transport_mock),
+        patch("easypaperless.client.PaperlessClient") as mock_pc,
+    ):
         result = await middleware.on_list_tools(context, call_next)
 
     mock_pc.assert_not_called()

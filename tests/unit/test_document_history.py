@@ -19,7 +19,9 @@ from easypaperless_mcp.tools.models import ListResult
 @pytest.fixture(autouse=True)
 def patch_document_history_get_client(patch_get_client: MagicMock):
     """Patch get_client inside the document_history module."""
-    with patch("easypaperless_mcp.tools.document_history.get_client", return_value=patch_get_client):
+    with patch(
+        "easypaperless_mcp.tools.document_history.get_client", return_value=patch_get_client
+    ):
         yield patch_get_client
 
 

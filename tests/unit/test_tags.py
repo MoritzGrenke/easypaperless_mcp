@@ -50,7 +50,9 @@ def make_tag(**kwargs: Any) -> Tag:
 
 
 def test_list_tags_calls_client(patch_get_client: MagicMock) -> None:
-    patch_get_client.tags.list.return_value = MagicMock(count=2, results=[make_tag(id=1), make_tag(id=2)])
+    patch_get_client.tags.list.return_value = MagicMock(
+        count=2, results=[make_tag(id=1), make_tag(id=2)]
+    )
     result = list_tags()
     patch_get_client.tags.list.assert_called_once()
     assert result.count == 2
@@ -104,7 +106,9 @@ def test_list_tags_omits_none_optional_params(patch_get_client: MagicMock) -> No
 
 
 def test_list_tags_returns_tag_objects(patch_get_client: MagicMock) -> None:
-    patch_get_client.tags.list.return_value = MagicMock(count=1, results=[make_tag(id=5, name="Finance")])
+    patch_get_client.tags.list.return_value = MagicMock(
+        count=1, results=[make_tag(id=5, name="Finance")]
+    )
     result = list_tags()
     assert isinstance(result.items[0], Tag)
     assert result.items[0].id == 5

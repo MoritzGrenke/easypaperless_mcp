@@ -206,4 +206,9 @@ def bulk_set_correspondent_permissions(
             Default: False (replace).
     """
     client = get_client()
-    client.correspondents.bulk_set_permissions(ids, set_permissions=set_permissions, owner=owner, merge=merge)  # type: ignore[arg-type]
+    client.correspondents.bulk_set_permissions(
+        ids,
+        set_permissions=set_permissions,  # type: ignore[arg-type]
+        owner=owner,
+        merge=merge,
+    )

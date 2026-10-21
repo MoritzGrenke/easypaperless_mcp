@@ -69,7 +69,7 @@ class CredentialMiddleware(Middleware):
             request = get_http_request()
             auth_header = request.headers.get("authorization")
             if auth_header and auth_header.startswith("Bearer "):
-                token = auth_header[len("Bearer "):]
+                token = auth_header[len("Bearer ") :]
             else:
                 x_token = request.headers.get("x-paperless-token")
                 if x_token:
@@ -146,7 +146,7 @@ class PermissionMiddleware(Middleware):
             username = request.headers.get("x-paperless-username")
             auth_header = request.headers.get("authorization")
             if auth_header and auth_header.startswith("Bearer "):
-                token = auth_header[len("Bearer "):]
+                token = auth_header[len("Bearer ") :]
             else:
                 token = request.headers.get("x-paperless-token")
             url = SERVER_URL or request.headers.get("x-paperless-url")
@@ -167,9 +167,7 @@ class PermissionMiddleware(Middleware):
             async with PaperlessClient(url=url, api_token=token) as client:
                 result = await client.users.list(username_exact=username)
         except Exception as exc:
-            raise RuntimeError(
-                f"Permission lookup failed for user {username!r}: {exc}"
-            ) from exc
+            raise RuntimeError(f"Permission lookup failed for user {username!r}: {exc}") from exc
 
         if not result.results:
             raise RuntimeError(

@@ -17,7 +17,9 @@ def test_list_custom_fields_returns_list_result(paperless_client: SyncPaperlessC
     assert isinstance(result.items, list)
 
 
-def test_list_custom_fields_returns_custom_field_objects(paperless_client: SyncPaperlessClient) -> None:
+def test_list_custom_fields_returns_custom_field_objects(
+    paperless_client: SyncPaperlessClient,
+) -> None:
     result = list_custom_fields()
     for field in result.items:
         assert isinstance(field, CustomField)

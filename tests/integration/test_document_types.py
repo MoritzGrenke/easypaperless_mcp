@@ -17,7 +17,9 @@ def test_list_document_types_returns_list_result(paperless_client: SyncPaperless
     assert isinstance(result.items, list)
 
 
-def test_list_document_types_returns_document_type_objects(paperless_client: SyncPaperlessClient) -> None:
+def test_list_document_types_returns_document_type_objects(
+    paperless_client: SyncPaperlessClient,
+) -> None:
     result = list_document_types()
     for document_type in result.items:
         assert isinstance(document_type, DocumentType)

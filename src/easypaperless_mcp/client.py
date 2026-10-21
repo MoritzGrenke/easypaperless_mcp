@@ -66,9 +66,7 @@ if _raw_retry_backoff is not None:
     try:
         _retry_backoff = float(_raw_retry_backoff)
     except ValueError:
-        raise RuntimeError(
-            f"PAPERLESS_RETRY_BACKOFF must be a float, got: {_raw_retry_backoff!r}"
-        )
+        raise RuntimeError(f"PAPERLESS_RETRY_BACKOFF must be a float, got: {_raw_retry_backoff!r}")
 
 # Per-request ContextVars — set by CredentialMiddleware before each tool call.
 _request_token: ContextVar[str | None] = ContextVar("_request_token", default=None)

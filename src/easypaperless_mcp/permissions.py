@@ -144,7 +144,7 @@ def filter_tools_by_permissions(
         Filtered list of tools the user is permitted to use.
     """
     return [
-        t for t in tools
-        if TOOL_PERMISSIONS.get(t.name) is None
-        or TOOL_PERMISSIONS[t.name] in permissions
+        t
+        for t in tools
+        if TOOL_PERMISSIONS.get(t.name) is None or TOOL_PERMISSIONS[t.name] in permissions
     ]

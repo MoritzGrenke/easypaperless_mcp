@@ -69,7 +69,9 @@ def test_update_document_add_tags_adds_to_existing(paperless_client: SyncPaperle
         paperless_client.documents.update(doc_id, tags=original_tags)
 
 
-def test_update_document_remove_tags_removes_from_existing(paperless_client: SyncPaperlessClient) -> None:
+def test_update_document_remove_tags_removes_from_existing(
+    paperless_client: SyncPaperlessClient,
+) -> None:
     doc_id, tag_id, original_tags = _get_test_doc_and_tag(paperless_client)
     # Ensure the tag is on the document before removing
     with_tag = list({*original_tags, tag_id})
@@ -81,7 +83,9 @@ def test_update_document_remove_tags_removes_from_existing(paperless_client: Syn
         paperless_client.documents.update(doc_id, tags=original_tags)
 
 
-def test_update_document_add_and_remove_tags_combined(paperless_client: SyncPaperlessClient) -> None:
+def test_update_document_add_and_remove_tags_combined(
+    paperless_client: SyncPaperlessClient,
+) -> None:
     """add_tags and remove_tags work together in a single call."""
     docs = list_documents(max_results=1)
     if not docs.items:

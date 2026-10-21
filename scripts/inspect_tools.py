@@ -1,7 +1,6 @@
 """Introspect all registered MCP tools and print a Markdown reference table."""
 
 import asyncio
-import inspect
 import os
 import sys
 
@@ -22,7 +21,6 @@ async def main() -> None:
     for tool in sorted(tools, key=lambda t: t.name):
         print(f"## `{tool.name}`")
 
-        name = tool.name
         if tool.description:
             first_para = tool.description.split("\n\n")[0].strip()
             print(f"\n{first_para}\n")

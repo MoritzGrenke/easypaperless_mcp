@@ -133,12 +133,16 @@ async def test_http_sets_token_from_header(middleware, context):
         captured_token = _request_token.get()
         return MagicMock()
 
-    request = _make_http_request({"x-paperless-token": "header-token", "x-paperless-url": "http://x"})
+    request = _make_http_request(
+        {"x-paperless-token": "header-token", "x-paperless-url": "http://x"}
+    )
     transport_mock = _make_transport_mock("http")
 
-    with patch("fastmcp.server.context._current_transport", transport_mock), \
-         patch("fastmcp.server.dependencies.get_http_request", return_value=request), \
-         patch("easypaperless_mcp.server.SERVER_URL", None):
+    with (
+        patch("fastmcp.server.context._current_transport", transport_mock),
+        patch("fastmcp.server.dependencies.get_http_request", return_value=request),
+        patch("easypaperless_mcp.server.SERVER_URL", None),
+    ):
         await middleware.on_call_tool(context, capture)
 
     assert captured_token == "header-token"
@@ -154,12 +158,16 @@ async def test_http_sets_url_from_header_when_server_url_unset(middleware, conte
         captured_url = _request_url.get()
         return MagicMock()
 
-    request = _make_http_request({"x-paperless-token": "tok", "x-paperless-url": "http://client-url"})
+    request = _make_http_request(
+        {"x-paperless-token": "tok", "x-paperless-url": "http://client-url"}
+    )
     transport_mock = _make_transport_mock("http")
 
-    with patch("fastmcp.server.context._current_transport", transport_mock), \
-         patch("fastmcp.server.dependencies.get_http_request", return_value=request), \
-         patch("easypaperless_mcp.server.SERVER_URL", None):
+    with (
+        patch("fastmcp.server.context._current_transport", transport_mock),
+        patch("fastmcp.server.dependencies.get_http_request", return_value=request),
+        patch("easypaperless_mcp.server.SERVER_URL", None),
+    ):
         await middleware.on_call_tool(context, capture)
 
     assert captured_url == "http://client-url"
@@ -176,12 +184,16 @@ async def test_http_server_url_overrides_client_header(middleware, context):
         return MagicMock()
 
     # Client supplies a different URL in the header
-    request = _make_http_request({"x-paperless-token": "tok", "x-paperless-url": "http://client-url"})
+    request = _make_http_request(
+        {"x-paperless-token": "tok", "x-paperless-url": "http://client-url"}
+    )
     transport_mock = _make_transport_mock("http")
 
-    with patch("fastmcp.server.context._current_transport", transport_mock), \
-         patch("fastmcp.server.dependencies.get_http_request", return_value=request), \
-         patch("easypaperless_mcp.server.SERVER_URL", "http://server-locked-url"):
+    with (
+        patch("fastmcp.server.context._current_transport", transport_mock),
+        patch("fastmcp.server.dependencies.get_http_request", return_value=request),
+        patch("easypaperless_mcp.server.SERVER_URL", "http://server-locked-url"),
+    ):
         await middleware.on_call_tool(context, capture)
 
     assert captured_url == "http://server-locked-url"
@@ -200,9 +212,11 @@ async def test_http_no_token_header_sets_none(middleware, context):
     request = _make_http_request({"x-paperless-url": "http://x"})
     transport_mock = _make_transport_mock("http")
 
-    with patch("fastmcp.server.context._current_transport", transport_mock), \
-         patch("fastmcp.server.dependencies.get_http_request", return_value=request), \
-         patch("easypaperless_mcp.server.SERVER_URL", None):
+    with (
+        patch("fastmcp.server.context._current_transport", transport_mock),
+        patch("fastmcp.server.dependencies.get_http_request", return_value=request),
+        patch("easypaperless_mcp.server.SERVER_URL", None),
+    ):
         await middleware.on_call_tool(context, capture)
 
     assert captured_token is None
@@ -221,9 +235,11 @@ async def test_http_no_url_header_and_no_server_url_sets_none(middleware, contex
     request = _make_http_request({"x-paperless-token": "tok"})
     transport_mock = _make_transport_mock("http")
 
-    with patch("fastmcp.server.context._current_transport", transport_mock), \
-         patch("fastmcp.server.dependencies.get_http_request", return_value=request), \
-         patch("easypaperless_mcp.server.SERVER_URL", None):
+    with (
+        patch("fastmcp.server.context._current_transport", transport_mock),
+        patch("fastmcp.server.dependencies.get_http_request", return_value=request),
+        patch("easypaperless_mcp.server.SERVER_URL", None),
+    ):
         await middleware.on_call_tool(context, capture)
 
     assert captured_url is None
@@ -244,12 +260,16 @@ async def test_http_sets_token_from_authorization_bearer(middleware, context):
         captured_token = _request_token.get()
         return MagicMock()
 
-    request = _make_http_request({"authorization": "Bearer bearer-token", "x-paperless-url": "http://x"})
+    request = _make_http_request(
+        {"authorization": "Bearer bearer-token", "x-paperless-url": "http://x"}
+    )
     transport_mock = _make_transport_mock("http")
 
-    with patch("fastmcp.server.context._current_transport", transport_mock), \
-         patch("fastmcp.server.dependencies.get_http_request", return_value=request), \
-         patch("easypaperless_mcp.server.SERVER_URL", None):
+    with (
+        patch("fastmcp.server.context._current_transport", transport_mock),
+        patch("fastmcp.server.dependencies.get_http_request", return_value=request),
+        patch("easypaperless_mcp.server.SERVER_URL", None),
+    ):
         await middleware.on_call_tool(context, capture)
 
     assert captured_token == "bearer-token"
@@ -265,16 +285,20 @@ async def test_http_bearer_takes_precedence_over_x_paperless_token(middleware, c
         captured_token = _request_token.get()
         return MagicMock()
 
-    request = _make_http_request({
-        "authorization": "Bearer bearer-wins",
-        "x-paperless-token": "x-header-loses",
-        "x-paperless-url": "http://x",
-    })
+    request = _make_http_request(
+        {
+            "authorization": "Bearer bearer-wins",
+            "x-paperless-token": "x-header-loses",
+            "x-paperless-url": "http://x",
+        }
+    )
     transport_mock = _make_transport_mock("http")
 
-    with patch("fastmcp.server.context._current_transport", transport_mock), \
-         patch("fastmcp.server.dependencies.get_http_request", return_value=request), \
-         patch("easypaperless_mcp.server.SERVER_URL", None):
+    with (
+        patch("fastmcp.server.context._current_transport", transport_mock),
+        patch("fastmcp.server.dependencies.get_http_request", return_value=request),
+        patch("easypaperless_mcp.server.SERVER_URL", None),
+    ):
         await middleware.on_call_tool(context, capture)
 
     assert captured_token == "bearer-wins"
@@ -290,12 +314,16 @@ async def test_http_non_bearer_authorization_header_ignored(middleware, context)
         captured_token = _request_token.get()
         return MagicMock()
 
-    request = _make_http_request({"authorization": "Basic dXNlcjpwYXNz", "x-paperless-url": "http://x"})
+    request = _make_http_request(
+        {"authorization": "Basic dXNlcjpwYXNz", "x-paperless-url": "http://x"}
+    )
     transport_mock = _make_transport_mock("http")
 
-    with patch("fastmcp.server.context._current_transport", transport_mock), \
-         patch("fastmcp.server.dependencies.get_http_request", return_value=request), \
-         patch("easypaperless_mcp.server.SERVER_URL", None):
+    with (
+        patch("fastmcp.server.context._current_transport", transport_mock),
+        patch("fastmcp.server.dependencies.get_http_request", return_value=request),
+        patch("easypaperless_mcp.server.SERVER_URL", None),
+    ):
         await middleware.on_call_tool(context, capture)
 
     assert captured_token is None
@@ -312,10 +340,12 @@ async def test_http_x_paperless_token_emits_deprecation_warning(middleware, cont
     request = _make_http_request({"x-paperless-token": "old-token", "x-paperless-url": "http://x"})
     transport_mock = _make_transport_mock("http")
 
-    with patch("fastmcp.server.context._current_transport", transport_mock), \
-         patch("fastmcp.server.dependencies.get_http_request", return_value=request), \
-         patch("easypaperless_mcp.server.SERVER_URL", None), \
-         caplog.at_level(logging.WARNING, logger="easypaperless_mcp.server"):
+    with (
+        patch("fastmcp.server.context._current_transport", transport_mock),
+        patch("fastmcp.server.dependencies.get_http_request", return_value=request),
+        patch("easypaperless_mcp.server.SERVER_URL", None),
+        caplog.at_level(logging.WARNING, logger="easypaperless_mcp.server"),
+    ):
         await middleware.on_call_tool(context, capture)
 
     assert any("deprecated" in record.message.lower() for record in caplog.records)
@@ -330,13 +360,17 @@ async def test_http_bearer_no_deprecation_warning(middleware, context, caplog):
     async def capture(ctx):
         return MagicMock()
 
-    request = _make_http_request({"authorization": "Bearer clean-token", "x-paperless-url": "http://x"})
+    request = _make_http_request(
+        {"authorization": "Bearer clean-token", "x-paperless-url": "http://x"}
+    )
     transport_mock = _make_transport_mock("http")
 
-    with patch("fastmcp.server.context._current_transport", transport_mock), \
-         patch("fastmcp.server.dependencies.get_http_request", return_value=request), \
-         patch("easypaperless_mcp.server.SERVER_URL", None), \
-         caplog.at_level(logging.WARNING, logger="easypaperless_mcp.server"):
+    with (
+        patch("fastmcp.server.context._current_transport", transport_mock),
+        patch("fastmcp.server.dependencies.get_http_request", return_value=request),
+        patch("easypaperless_mcp.server.SERVER_URL", None),
+        caplog.at_level(logging.WARNING, logger="easypaperless_mcp.server"),
+    ):
         await middleware.on_call_tool(context, capture)
 
     assert not caplog.records

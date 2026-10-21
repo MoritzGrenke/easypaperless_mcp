@@ -221,4 +221,9 @@ def bulk_set_storage_path_permissions(
             Default: False (replace).
     """
     client = get_client()
-    client.storage_paths.bulk_set_permissions(ids, set_permissions=set_permissions, owner=owner, merge=merge)  # type: ignore[arg-type]
+    client.storage_paths.bulk_set_permissions(
+        ids,
+        set_permissions=set_permissions,  # type: ignore[arg-type]
+        owner=owner,
+        merge=merge,
+    )

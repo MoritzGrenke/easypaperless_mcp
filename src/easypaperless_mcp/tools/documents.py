@@ -164,10 +164,10 @@ def list_documents(
 
     Args:
         search: Search string applied according to search_mode.
-        search_mode: How search is applied. One of: 
+        search_mode: How search is applied. One of:
             "title_or_content" (default), "title", "original_filename",
-            "query" - complex search Whoosh query. Supports: phrases "foo bar", wildcards appl*/appl?, 
-            boolean AND OR NOT (uppercase), field search title:word. Default operator: AND. 
+            "query" - complex search Whoosh query. Supports: phrases "foo bar", wildcards appl*/appl?,
+            boolean AND OR NOT (uppercase), field search title:word. Default operator: AND.
             searches in title, content, notes, custom_fields, and more fields
         ids: Restrict results to this specific set of document IDs.
         tags: Filter to documents that have ALL of these tags (IDs or names).
@@ -190,10 +190,10 @@ def list_documents(
         any_custom_fields: Filter to documents with ANY of these custom fields set (IDs or names).
         exclude_custom_fields: Exclude documents with ANY of these custom fields set (IDs or names).
         custom_field_query: Filter by custom field values using JSON arrays: ["field_name", "operator", value].
-            Operators: exact, in, isnull, exists (all types) | icontains, istartswith, iendswith (text/URL) 
+            Operators: exact, in, isnull, exists (all types) | icontains, istartswith, iendswith (text/URL)
             | gt, gte, lt, lte, range (numbers/dates) | contains (doc links).
-            Use ["AND", [[...], [...]]] or ["OR", [[...], [...]]] to combine multiple conditions; 
-            nesting is supported. Examples: ["due","range",["2024-08-01","2024-09-01"]] 
+            Use ["AND", [[...], [...]]] or ["OR", [[...], [...]]] to combine multiple conditions;
+            nesting is supported. Examples: ["due","range",["2024-08-01","2024-09-01"]]
             | ["customer","exact","bob"] | ["refs","contains",[3,7]]
         created_after: ISO date string — only documents created after this date.
         created_before: ISO date string — only documents created before this date.
@@ -230,7 +230,11 @@ def list_documents(
     if "id" not in return_fields:
         return_fields = ["id"] + return_fields
     client = get_client()
-    kwargs: dict[str, Any] = {"max_results": max_results, "page_size": page_size, "descending": descending}
+    kwargs: dict[str, Any] = {
+        "max_results": max_results,
+        "page_size": page_size,
+        "descending": descending,
+    }
     if search is not None:
         kwargs["search"] = search
         kwargs["search_mode"] = search_mode
@@ -513,7 +517,12 @@ def update_document(
             smart.append("document_type")
         if storage_path is not UNSET:  # type: ignore[comparison-overlap]
             smart.append("storage_path")
-        if tags is not None or add_tags is not None or remove_tags is not None or remove_inbox_tags is not None:
+        if (
+            tags is not None
+            or add_tags is not None
+            or remove_tags is not None
+            or remove_inbox_tags is not None
+        ):
             smart.append("tags")
         if archive_serial_number is not UNSET:  # type: ignore[comparison-overlap]
             smart.append("archive_serial_number")
@@ -744,5 +753,8 @@ def bulk_set_permissions(
     """
     client = get_client()
     client.documents.bulk_set_permissions(
-        ids, set_permissions=set_permissions, owner=owner, merge=merge  # type: ignore[arg-type]
+        ids,
+        set_permissions=set_permissions,  # type: ignore[arg-type]
+        owner=owner,
+        merge=merge,
     )

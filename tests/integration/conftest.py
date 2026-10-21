@@ -10,7 +10,9 @@ from easypaperless_mcp.client import _request_token, _request_url
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    config.addinivalue_line("markers", "integration: mark test as requiring a live paperless-ngx instance")
+    config.addinivalue_line(
+        "markers", "integration: mark test as requiring a live paperless-ngx instance"
+    )
 
 
 @pytest.fixture(scope="session", autouse=True)
